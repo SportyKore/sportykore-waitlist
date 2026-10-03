@@ -71,6 +71,7 @@ const gameSchema = {
 					<div class="kanter-meta">
 						<span data-turn-pill>Your turn</span>
 						<span data-difficulty-pill>Medium</span>
+						<span data-rules-pill>Football rules</span>
 						<span data-owner-pill>Owner calm</span>
 					</div>
 
@@ -94,6 +95,10 @@ const gameSchema = {
 									Select a cap, drag back, and release. You and the computer take
 									one flick at a time.
 								</p>
+								<div class="kanter-rules" role="group" aria-label="Choose match rules">
+									<button type="button" data-rules="football" class="is-active">Football</button>
+									<button type="button" data-rules="street">Street</button>
+								</div>
 								<div class="kanter-difficulty" role="group" aria-label="Choose difficulty">
 									<button type="button" data-difficulty="easy">Easy</button>
 									<button type="button" data-difficulty="medium" class="is-active">Medium</button>
@@ -329,14 +334,23 @@ const gameSchema = {
 		line-height: 1.55;
 	}
 
-	.kanter-difficulty {
+	.kanter-difficulty,
+	.kanter-rules {
 		display: grid;
-		grid-template-columns: repeat(3, minmax(0, 1fr));
 		gap: 0.45rem;
 		margin: 0 0 1rem;
 	}
 
-	.kanter-difficulty button {
+	.kanter-difficulty {
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+	}
+
+	.kanter-rules {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+
+	.kanter-difficulty button,
+	.kanter-rules button {
 		border: 1px solid rgba(248, 248, 250, 0.18);
 		border-radius: 999px;
 		background: rgba(248, 248, 250, 0.07);
@@ -346,7 +360,8 @@ const gameSchema = {
 		padding: 0.58rem 0.5rem;
 	}
 
-	.kanter-difficulty button.is-active {
+	.kanter-difficulty button.is-active,
+	.kanter-rules button.is-active {
 		border-color: var(--cta-gold);
 		background: var(--cta-gold);
 		color: #171717;
@@ -398,7 +413,7 @@ const gameSchema = {
 		}
 
 		.kanter-meta {
-			grid-template-columns: repeat(3, minmax(0, 1fr));
+			grid-template-columns: repeat(4, minmax(0, 1fr));
 		}
 
 		.kanter-overlay {
@@ -432,6 +447,7 @@ const gameSchema = {
 
 <script>
 import { planCpuTurn } from '../lib/kanter-ball/cpu.js';
+import { detectBoundaryEvent, restartPlacement } from '../lib/kanter-ball/boundaries.js';
 
 (() => {
 	const canvas = document.getElementById('kanter-canvas');
@@ -446,6 +462,7 @@ import { planCpuTurn } from '../lib/kanter-ball/cpu.js';
 	const recordEl = document.querySelector('[data-record]');
 	const turnPill = document.querySelector('[data-turn-pill]');
 	const difficultyPill = document.querySelector('[data-difficulty-pill]');
+	const rulesPill = document.querySelector('[data-rules-pill]');
 	const ownerPill = document.querySelector('[data-owner-pill]');
 	const startOverlay = document.querySelector('[data-start-overlay]');
 	const endOverlay = document.querySelector('[data-end-overlay]');
@@ -461,6 +478,7 @@ import { planCpuTurn } from '../lib/kanter-ball/cpu.js';
 	const endCopy = document.querySelector('[data-end-copy]');
 	const followLink = document.querySelector('[data-follow-x]');
 	const difficultyButtons = Array.from(document.querySelectorAll('[data-difficulty]'));
+	const rulesButtons = Array.from(document.querySelectorAll('[data-rules]'));
 
 	const MUTE_KEY = 'sportykore:kanter-ball:mute';
 	const RECORDS_KEY = 'sportykore:kanter-ball:records';
@@ -517,6 +535,7 @@ import { planCpuTurn } from '../lib/kanter-ball/cpu.js';
 	const state = {
 		mode: 'ready',
 		difficulty: 'medium',
+		rulesMode: 'football',
 		turn: 'player',
 		playerScore: 0,
 		cpuScore: 0,
@@ -536,6 +555,8 @@ import { planCpuTurn } from '../lib/kanter-ball/cpu.js';
 		toastTimer: 0,
 		goalCooldown: 0,
 		currentShot: null,
+		lastTouch: null,
+		restartTaker: null,
 		particles: [],
 		audio: {
 			ctx: null,
@@ -567,6 +588,9 @@ import { planCpuTurn } from '../lib/kanter-ball/cpu.js';
 	muteButton?.addEventListener('click', toggleMute);
 	for (const button of difficultyButtons) {
 		button.addEventListener('click', () => setDifficulty(button.getAttribute('data-difficulty') || 'medium'));
+	}
+	for (const button of rulesButtons) {
+		button.addEventListener('click', () => setRulesMode(button.getAttribute('data-rules') || 'football'));
 	}
 
 	canvas.addEventListener('pointerdown', onPointerDown);
@@ -615,6 +639,15 @@ import { planCpuTurn } from '../lib/kanter-ball/cpu.js';
 		updateHud();
 	}
 
+	function setRulesMode(key) {
+		if (key !== 'football' && key !== 'street') return;
+		state.rulesMode = key;
+		for (const button of rulesButtons) {
+			button.classList.toggle('is-active', button.getAttribute('data-rules') === key);
+		}
+		updateHud();
+	}
+
 	function startGame() {
 		unlockAudio();
 		state.mode = 'running';
@@ -631,13 +664,15 @@ import { planCpuTurn } from '../lib/kanter-ball/cpu.js';
 		state.settleTimer = 0;
 		state.cpuThinkTimer = 0;
 		state.goalCooldown = 0;
+		state.lastTouch = null;
+		state.restartTaker = null;
 		state.particles = [];
 		startOverlay?.classList.remove('is-visible');
 		endOverlay?.classList.remove('is-visible');
 		resetPositions('player');
 		showToast('Your turn. Drag one red cap.');
 		playCommentary('kickoff');
-		track('game_start', { difficulty: difficultyLabel() });
+		track('game_start', { difficulty: difficultyLabel(), rules: state.rulesMode });
 		updateHud();
 	}
 
@@ -677,6 +712,7 @@ import { planCpuTurn } from '../lib/kanter-ball/cpu.js';
 			playerScore: state.playerScore,
 			cpuScore: state.cpuScore,
 			difficulty: difficultyLabel(),
+			rules: state.rulesMode,
 			duration: Math.max(0, Math.round((performance.now() - state.startedAt) / 1000)),
 			reason,
 		};
@@ -721,6 +757,8 @@ import { planCpuTurn } from '../lib/kanter-ball/cpu.js';
 		state.dragging = false;
 		state.dragPoint = null;
 		state.currentShot = null;
+		state.lastTouch = null;
+		state.restartTaker = null;
 		state.settleTimer = 0;
 		state.cpuThinkTimer = 0;
 	}
@@ -803,6 +841,7 @@ import { planCpuTurn } from '../lib/kanter-ball/cpu.js';
 		if (Math.hypot(drag.x, drag.y) < 10) return;
 		cap.vx = drag.x * PHYSICS.powerScale;
 		cap.vy = drag.y * PHYSICS.powerScale;
+		state.restartTaker = null;
 		state.currentShot = {
 			side: 'player',
 			cap,
@@ -876,6 +915,15 @@ import { planCpuTurn } from '../lib/kanter-ball/cpu.js';
 	}
 
 	function cpuShoot() {
+		if (state.restartTaker?.side === 'cpu') {
+			const cap = state.restartTaker;
+			const direction = normalize({ x: ball.x - cap.x, y: ball.y - cap.y });
+			cap.vx = direction.x * 520;
+			cap.vy = direction.y * 520;
+			state.restartTaker = null;
+			beginCpuShot(cap);
+			return;
+		}
 		const plan = planCpuTurn({
 			ball,
 			cpuCaps,
@@ -891,6 +939,10 @@ import { planCpuTurn } from '../lib/kanter-ball/cpu.js';
 		const cap = plan.cap;
 		cap.vx = plan.velocity.x;
 		cap.vy = plan.velocity.y;
+		beginCpuShot(cap);
+	}
+
+	function beginCpuShot(cap) {
 		state.currentShot = {
 			side: 'cpu',
 			cap,
@@ -944,17 +996,67 @@ import { planCpuTurn } from '../lib/kanter-ball/cpu.js';
 	}
 
 	function stepPhysics(dt) {
+		const previousBall = { x: ball.x, y: ball.y };
 		for (const body of bodies) {
 			body.x += body.vx * dt;
 			body.y += body.vy * dt;
 			applyFriction(body, dt);
 		}
 
-		for (const body of bodies) collideWalls(body);
+		for (const body of bodies) {
+			if (state.rulesMode === 'street' || body !== ball) collideWalls(body);
+		}
+		if (state.rulesMode === 'football') {
+			const boundaryEvent = detectBoundaryEvent({
+				previous: previousBall,
+				ball,
+				pitch: PITCH,
+				goal: GOAL,
+				lastTouch: state.lastTouch,
+			});
+			if (boundaryEvent) {
+				handleBoundaryEvent(boundaryEvent);
+				return;
+			}
+		}
 		for (let i = 0; i < bodies.length; i += 1) {
 			for (let j = i + 1; j < bodies.length; j += 1) collideBodies(bodies[i], bodies[j]);
 		}
-		checkGoal();
+		if (state.rulesMode === 'street') checkGoal();
+	}
+
+	function handleBoundaryEvent(event) {
+		if (event.type === 'goal') {
+			scoreGoal(event.awardedTo);
+			return;
+		}
+		for (const body of bodies) {
+			body.vx = 0;
+			body.vy = 0;
+		}
+		const teamCaps = event.awardedTo === 'player' ? playerCaps : cpuCaps;
+		const placement = restartPlacement({ event, pitch: PITCH, ballRadius: ball.r });
+		const eligible =
+			placement.role === 'keeper'
+				? teamCaps.filter((cap) => cap.role === 'keeper')
+				: teamCaps.filter((cap) => cap.role !== 'keeper');
+		const taker = closestTo(eligible.length ? eligible : teamCaps, placement.taker);
+		ball.x = placement.ball.x;
+		ball.y = placement.ball.y;
+		taker.x = placement.taker.x;
+		taker.y = placement.taker.y;
+		state.currentShot = null;
+		state.selectedCap = null;
+		state.restartTaker = taker;
+		state.lastTouch = null;
+		state.turn = event.awardedTo;
+		state.settleTimer = 0;
+		state.cpuThinkTimer = 0;
+		const team = event.awardedTo === 'player' ? 'Your' : 'Computer';
+		const label =
+			event.type === 'throw_in' ? 'throw-in' : event.type === 'goal_kick' ? 'goal kick' : 'corner';
+		showToast(`${team} ${label}.`);
+		track('restart_awarded', { type: event.type, side: event.awardedTo, rules: state.rulesMode });
 	}
 
 	function applyFriction(body, dt) {
@@ -1018,6 +1120,9 @@ import { planCpuTurn } from '../lib/kanter-ball/cpu.js';
 			b.vx += ix / b.mass;
 			b.vy += iy / b.mass;
 		}
+
+		if (a === ball && b.type === 'cap') state.lastTouch = b.side;
+		if (b === ball && a.type === 'cap') state.lastTouch = a.side;
 
 		if (state.currentShot) {
 			if (a === ball || b === ball) state.currentShot.touchedBall = true;
@@ -1273,6 +1378,7 @@ import { planCpuTurn } from '../lib/kanter-ball/cpu.js';
 		if (timeEl) timeEl.textContent = String(Math.max(0, Math.ceil(state.remaining)));
 		if (recordEl) recordEl.textContent = String(state.records.bestStreak);
 		if (difficultyPill) difficultyPill.textContent = difficultyLabel();
+		if (rulesPill) rulesPill.textContent = state.rulesMode === 'football' ? 'Football rules' : 'Street rebound';
 		if (turnPill) {
 			turnPill.textContent =
 				state.turn === 'player' ? 'Your turn' : state.turn === 'cpu' ? 'Computer turn' : 'Ball moving';
