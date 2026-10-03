@@ -1,4 +1,4 @@
-export function detectBoundaryEvent({ previous, ball, pitch, goal, lastTouch }) {
+export function detectBoundaryEvent({ previous, ball, pitch, goal, lastTouch, fallbackTouch }) {
 	const left = pitch.x;
 	const right = pitch.x + pitch.width;
 	const top = pitch.y;
@@ -15,12 +15,13 @@ export function detectBoundaryEvent({ previous, ball, pitch, goal, lastTouch }) 
 	const exit = crossings.sort((a, b) => a.time - b.time)[0];
 	const exitX = previous.x + (ball.x - previous.x) * exit.time;
 	const exitY = previous.y + (ball.y - previous.y) * exit.time;
+	const effectiveLastTouch = lastTouch || fallbackTouch;
 
 	if (exit.edge === 'left' || exit.edge === 'right') {
 		return {
 			type: 'throw_in',
 			edge: exit.edge,
-			awardedTo: opposite(lastTouch),
+			awardedTo: opposite(effectiveLastTouch),
 			exitPoint: { x: exitX, y: exitY },
 		};
 	}
@@ -34,13 +35,17 @@ export function detectBoundaryEvent({ previous, ball, pitch, goal, lastTouch }) 
 		return { type: 'goal', edge: exit.edge, awardedTo: attacking, exitPoint: { x: exitX, y: exitY } };
 	}
 
-	const defenderTouchedLast = lastTouch === defending;
+	const defenderTouchedLast = effectiveLastTouch === defending;
 	return {
 		type: defenderTouchedLast ? 'corner' : 'goal_kick',
 		edge: exit.edge,
 		awardedTo: defenderTouchedLast ? attacking : defending,
 		exitPoint: { x: exitX, y: exitY },
 	};
+}
+
+export function shouldRecordLastTouch(relativeNormalSpeed) {
+	return Number.isFinite(relativeNormalSpeed) && relativeNormalSpeed < -1;
 }
 
 export function restartPlacement({ event, pitch, ballRadius = 14, capRadius = 24 }) {

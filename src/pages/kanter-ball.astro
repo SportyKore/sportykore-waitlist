@@ -447,7 +447,11 @@ const gameSchema = {
 
 <script>
 import { planCpuTurn } from '../lib/kanter-ball/cpu.js';
-import { detectBoundaryEvent, restartPlacement } from '../lib/kanter-ball/boundaries.js';
+import {
+	detectBoundaryEvent,
+	restartPlacement,
+	shouldRecordLastTouch,
+} from '../lib/kanter-ball/boundaries.js';
 
 (() => {
 	const canvas = document.getElementById('kanter-canvas');
@@ -1013,6 +1017,7 @@ import { detectBoundaryEvent, restartPlacement } from '../lib/kanter-ball/bounda
 				pitch: PITCH,
 				goal: GOAL,
 				lastTouch: state.lastTouch,
+				fallbackTouch: state.currentShot?.side,
 			});
 			if (boundaryEvent) {
 				handleBoundaryEvent(boundaryEvent);
@@ -1112,6 +1117,10 @@ import { detectBoundaryEvent, restartPlacement } from '../lib/kanter-ball/bounda
 		const rvy = b.vy - a.vy;
 		const speed = rvx * nx + rvy * ny;
 		if (speed < 0) {
+			if (shouldRecordLastTouch(speed)) {
+				if (a === ball && b.type === 'cap') state.lastTouch = b.side;
+				if (b === ball && a.type === 'cap') state.lastTouch = a.side;
+			}
 			const impulse = (-(1 + PHYSICS.restitution) * speed) / (1 / a.mass + 1 / b.mass);
 			const ix = impulse * nx;
 			const iy = impulse * ny;
@@ -1120,9 +1129,6 @@ import { detectBoundaryEvent, restartPlacement } from '../lib/kanter-ball/bounda
 			b.vx += ix / b.mass;
 			b.vy += iy / b.mass;
 		}
-
-		if (a === ball && b.type === 'cap') state.lastTouch = b.side;
-		if (b === ball && a.type === 'cap') state.lastTouch = a.side;
 
 		if (state.currentShot) {
 			if (a === ball || b === ball) state.currentShot.touchedBall = true;

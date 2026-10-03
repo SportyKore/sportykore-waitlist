@@ -1,7 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { detectBoundaryEvent, restartPlacement } from '../src/lib/kanter-ball/boundaries.js';
+import {
+	detectBoundaryEvent,
+	restartPlacement,
+	shouldRecordLastTouch,
+} from '../src/lib/kanter-ball/boundaries.js';
 
 const pitch = { x: 48, y: 58, width: 624, height: 864 };
 const goal = { width: 186, depth: 34 };
@@ -13,6 +17,26 @@ test('touchline exit awards a throw-in to the other team', () => {
 	assert.equal(result.type, 'throw_in');
 	assert.equal(result.edge, 'left');
 	assert.equal(result.awardedTo, 'cpu');
+});
+
+test('active shooter is the fallback when collision attribution is temporarily unavailable', () => {
+	const result = detectBoundaryEvent({
+		previous: { x: 70, y: 500 },
+		ball: { x: 30, y: 510, r: 14 },
+		pitch,
+		goal,
+		lastTouch: null,
+		fallbackTouch: 'player',
+	});
+	assert.equal(result.type, 'throw_in');
+	assert.equal(result.awardedTo, 'cpu');
+});
+
+test('only an incoming impact can replace last-touch ownership', () => {
+	assert.equal(shouldRecordLastTouch(-120), true);
+	assert.equal(shouldRecordLastTouch(-1), false);
+	assert.equal(shouldRecordLastTouch(0), false);
+	assert.equal(shouldRecordLastTouch(45), false);
 });
 
 test('attacker touching the ball over the goal line produces a goal kick', () => {
