@@ -4,9 +4,33 @@ const DEFAULT_PITCH = { x: 48, y: 58, width: 624, height: 864 };
 const DEFAULT_GOAL = { width: 186, depth: 34 };
 
 export const CPU_DIFFICULTIES = {
-	easy: { choicePool: 3, targetError: 52, powerError: 0.14, strength: 0.72, impactSpeed: 280, alignmentWeight: 90 },
-	medium: { choicePool: 2, targetError: 18, powerError: 0.055, strength: 0.9, impactSpeed: 405, alignmentWeight: 210 },
-	hard: { choicePool: 1, targetError: 2, powerError: 0.008, strength: 1.08, impactSpeed: 540, alignmentWeight: 390 },
+	easy: {
+		choicePool: 3,
+		targetError: 52,
+		powerError: 0.14,
+		strength: 0.72,
+		impactSpeed: 280,
+		alignmentWeight: 90,
+		defensiveDepth: 0.2,
+	},
+	medium: {
+		choicePool: 2,
+		targetError: 18,
+		powerError: 0.055,
+		strength: 0.9,
+		impactSpeed: 405,
+		alignmentWeight: 210,
+		defensiveDepth: 0.32,
+	},
+	hard: {
+		choicePool: 1,
+		targetError: 2,
+		powerError: 0.008,
+		strength: 1.08,
+		impactSpeed: 540,
+		alignmentWeight: 390,
+		defensiveDepth: 0.42,
+	},
 };
 
 /**
@@ -29,21 +53,37 @@ export function planCpuTurn({
 
 	const profile = CPU_DIFFICULTIES[difficulty] || CPU_DIFFICULTIES.medium;
 	const allCaps = [...cpuCaps, ...playerCaps];
-	const defensiveDanger = isBallInKeeperDanger({ side: 'cpu', ball, pitch });
-	const intent = 'attack';
-	const targetY = pitch.y + pitch.height + goal.depth;
+	const defensiveDanger = isBallInKeeperDanger({
+		side: 'cpu',
+		ball,
+		pitch,
+		depth: profile.defensiveDepth,
+	});
+	const keeperEmergency = isBallInKeeperDanger({ side: 'cpu', ball, pitch, depth: 0.17 });
+	const intent = defensiveDanger ? 'clear' : 'attack';
 	const goalCenter = pitch.x + pitch.width / 2;
 	const laneOffset = goal.width * 0.27;
-	const targets = [
-		{ x: goalCenter, y: targetY },
-		{ x: goalCenter - laneOffset, y: targetY },
-		{ x: goalCenter + laneOffset, y: targetY },
-	];
+	const targetY = pitch.y + pitch.height + goal.depth;
+	const clearanceY = Math.min(
+		pitch.y + pitch.height * 0.82,
+		Math.max(ball.y + pitch.height * 0.34, pitch.y + pitch.height * 0.68)
+	);
+	const targets = defensiveDanger
+		? [
+				{ x: pitch.x + pitch.width * 0.18, y: clearanceY },
+				{ x: goalCenter, y: clearanceY + pitch.height * 0.06 },
+				{ x: pitch.x + pitch.width * 0.82, y: clearanceY },
+			]
+		: [
+				{ x: goalCenter, y: targetY },
+				{ x: goalCenter - laneOffset, y: targetY },
+				{ x: goalCenter + laneOffset, y: targetY },
+			];
 
 	const plans = [];
 	for (let capIndex = 0; capIndex < cpuCaps.length; capIndex += 1) {
 		const cap = cpuCaps[capIndex];
-		if (cap.role === 'keeper' && !defensiveDanger) continue;
+		if (cap.role === 'keeper' && !keeperEmergency) continue;
 
 		for (const target of targets) {
 			const ballDirection = normalize({ x: target.x - ball.x, y: target.y - ball.y });
@@ -66,7 +106,7 @@ export function planCpuTurn({
 			);
 			const laneClearance = pathClearance(ball, target, allCaps, cap, (ball.r || 14) + 3);
 			const blockedApproach = approachClearance < 0;
-			const keeperPenalty = cap.role === 'keeper' ? (defensiveDanger ? 80 : 310) : 0;
+			const keeperPenalty = cap.role === 'keeper' ? 120 : 0;
 			const ownerAdjustment = cap.owner ? 4 : 0;
 			const score =
 				approachDistance +
@@ -93,14 +133,32 @@ export function planCpuTurn({
 	if (plans.length === 0) return null;
 	plans.sort((a, b) => a.score - b.score);
 	const clearPlans = plans.filter((plan) => !plan.blockedApproach);
+	if (defensiveDanger && clearPlans.length === 0) {
+		const block = planDefensiveBlock({
+			ball,
+			cpuCaps,
+			playerCaps,
+			pitch,
+			goalCenter,
+			profile,
+			friction,
+			maxDrag,
+			powerScale,
+			keeperEmergency,
+		});
+		if (block) return block;
+	}
 	const usablePlans = clearPlans.length > 0 ? clearPlans : plans;
 	const choicePool = usablePlans.slice(0, Math.min(profile.choicePool, usablePlans.length));
 	const chosen = choicePool[Math.floor(random() * choicePool.length)] || choicePool[0];
 
 	const aimOffset = signedRandom(random) * profile.targetError;
+	const targetBounds = defensiveDanger
+		? { left: pitch.x + pitch.width * 0.1, right: pitch.x + pitch.width * 0.9 }
+		: { left: goalCenter - goal.width * 0.42, right: goalCenter + goal.width * 0.42 };
 	const target = {
 		...chosen.target,
-		x: clamp(chosen.target.x + aimOffset, goalCenter - goal.width * 0.42, goalCenter + goal.width * 0.42),
+		x: clamp(chosen.target.x + aimOffset, targetBounds.left, targetBounds.right),
 	};
 	const ballDirection = normalize({ x: target.x - ball.x, y: target.y - ball.y });
 	const contactDistance = (chosen.cap.r || 24) + (ball.r || 14) - 2;
@@ -134,6 +192,56 @@ export function planCpuTurn({
 		alignmentError: chosen.alignmentError,
 		intent,
 		blockedApproach: chosen.blockedApproach,
+	};
+}
+
+function planDefensiveBlock({
+	ball,
+	cpuCaps,
+	playerCaps,
+	pitch,
+	goalCenter,
+	profile,
+	friction,
+	maxDrag,
+	powerScale,
+	keeperEmergency,
+}) {
+	const blockPoint = {
+		x: ball.x + (goalCenter - ball.x) * 0.55,
+		y: Math.max(pitch.y + 38, ball.y - pitch.height * 0.16),
+	};
+	const allCaps = [...cpuCaps, ...playerCaps];
+	const candidates = cpuCaps
+		.filter((cap) => cap.role !== 'keeper' || keeperEmergency)
+		.map((cap, capIndex) => {
+			const routeClearance = pathClearance(cap, blockPoint, allCaps, cap, (cap.r || 24) + 4);
+			return {
+				cap,
+				capIndex,
+				distance: distance(cap, blockPoint),
+				routeClearance,
+			};
+		})
+		.filter((candidate) => candidate.routeClearance >= 0 && candidate.distance > 12)
+		.sort((a, b) => a.distance - b.distance);
+	const chosen = candidates[0];
+	if (!chosen) return null;
+
+	const direction = normalize({ x: blockPoint.x - chosen.cap.x, y: blockPoint.y - chosen.cap.y });
+	const travelSpeed = Math.sqrt(Math.max(0, 2 * friction * chosen.distance));
+	const maximumSpeed = maxDrag * powerScale * profile.strength;
+	const speed = clamp(travelSpeed, maxDrag * powerScale * 0.28, maximumSpeed);
+	return {
+		cap: chosen.cap,
+		capIndex: chosen.capIndex,
+		velocity: { x: direction.x * speed, y: direction.y * speed },
+		target: blockPoint,
+		contactPoint: null,
+		aimOffset: 0,
+		alignmentError: 0,
+		intent: 'block',
+		blockedApproach: false,
 	};
 }
 

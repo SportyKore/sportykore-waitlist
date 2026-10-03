@@ -72,16 +72,47 @@ test('difficulty reduces target error while preserving a valid ball contact', ()
 	}
 });
 
-test('hard CPU still targets the player goal when attacking from deep', () => {
+test('hard CPU clears downfield when the ball threatens its defensive third', () => {
 	const position = openingPosition();
 	position.ball = body(280, 210, { r: 14 });
 	position.cpuCaps[1] = body(250, 155);
 	const result = plan('hard', () => 0.5, position);
 
 	assert.ok(result);
-	assert.equal(result.intent, 'attack');
-	assert.ok(result.target.y > PITCH.y + PITCH.height);
-	assert.ok(result.target.x > 260 && result.target.x < 460);
+	assert.equal(result.intent, 'clear');
+	assert.ok(result.target.y > position.ball.y + PITCH.height * 0.3);
+	assert.ok(result.target.x > PITCH.x && result.target.x < PITCH.x + PITCH.width);
+});
+
+test('hard recognizes danger earlier than easy', () => {
+	const position = openingPosition();
+	position.ball = body(360, 400, { r: 14 });
+	assert.equal(plan('easy', () => 0.5, position).intent, 'attack');
+	assert.equal(plan('hard', () => 0.5, position).intent, 'clear');
+});
+
+test('CPU keeper only engages inside the emergency area', () => {
+	const position = openingPosition();
+	position.ball = body(360, 230, { r: 14 });
+	position.cpuCaps = [position.cpuCaps[0]];
+	assert.equal(plan('hard', () => 0.5, position), null);
+
+	position.ball = body(360, 160, { r: 14 });
+	assert.equal(plan('hard', () => 0.5, position)?.cap.role, 'keeper');
+});
+
+test('CPU covers the shooting lane when every route to the ball is blocked', () => {
+	const position = {
+		ball: body(360, 220, { r: 14 }),
+		cpuCaps: [body(200, 120)],
+		playerCaps: [body(360, 160, { r: 30 })],
+	};
+	const result = plan('hard', () => 0.5, position);
+
+	assert.ok(result);
+	assert.equal(result.intent, 'block');
+	assert.equal(result.contactPoint, null);
+	assert.ok(result.target.y < position.ball.y);
 });
 
 test('shot power rises clearly from easy to medium to hard', () => {
