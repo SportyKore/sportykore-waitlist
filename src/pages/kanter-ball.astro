@@ -123,7 +123,7 @@ const gameSchema = {
 								<p data-end-copy>0-0 on Medium.</p>
 								<div class="kanter-end-actions">
 									<button type="button" class="btn-cta" data-share>Share result</button>
-									<button type="button" class="btn-ghost-dark" data-rematch>Rematch</button>
+									<button type="button" class="btn-ghost-dark" data-rematch>Choose next match</button>
 								</div>
 								<a
 									class="kanter-follow-link"
@@ -625,8 +625,8 @@ import {
 	window.addEventListener('resize', resize);
 	startButton?.addEventListener('click', startGame);
 	rematchButton?.addEventListener('click', () => {
-		track('rematch_click', currentResultData());
-		startGame();
+		track('change_match_click', currentResultData());
+		showMatchSetup();
 	});
 	shareButton?.addEventListener('click', shareResult);
 	followLink?.addEventListener('click', () => track('waitlist_click', { target: 'x', ...currentResultData() }));
@@ -690,6 +690,16 @@ import {
 		for (const button of rulesButtons) {
 			button.classList.toggle('is-active', button.getAttribute('data-rules') === key);
 		}
+		updateHud();
+	}
+
+	function showMatchSetup() {
+		state.mode = 'ready';
+		state.dragging = false;
+		state.selectedCap = null;
+		state.currentShot = null;
+		endOverlay?.classList.remove('is-visible');
+		startOverlay?.classList.add('is-visible');
 		updateHud();
 	}
 

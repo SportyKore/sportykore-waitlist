@@ -38,8 +38,8 @@ test('hard CPU opening flick approaches the contact point behind the ball', () =
 	assert.notEqual(result.cap.role, 'keeper');
 	assert.equal(result.intent, 'attack');
 	assert.equal(result.blockedApproach, false);
-	assert.ok(result.contactPoint.y < position.ball.y);
 	assert.ok(result.target.y > position.ball.y);
+	assert.ok(result.alignmentError < 0.55, `hard alignment error was ${result.alignmentError}`);
 
 	const projectedEnd = {
 		x: result.cap.x + result.velocity.x,
@@ -72,16 +72,25 @@ test('difficulty reduces target error while preserving a valid ball contact', ()
 	}
 });
 
-test('CPU clears diagonally away from danger near its own goal', () => {
+test('hard CPU still targets the player goal when attacking from deep', () => {
 	const position = openingPosition();
 	position.ball = body(280, 210, { r: 14 });
 	position.cpuCaps[1] = body(250, 155);
 	const result = plan('hard', () => 0.5, position);
 
 	assert.ok(result);
-	assert.equal(result.intent, 'clear');
-	assert.ok(result.target.y > position.ball.y);
-	assert.ok(result.target.x > 360);
+	assert.equal(result.intent, 'attack');
+	assert.ok(result.target.y > PITCH.y + PITCH.height);
+	assert.ok(result.target.x > 260 && result.target.x < 460);
+});
+
+test('shot power rises clearly from easy to medium to hard', () => {
+	const steadyRandom = () => 0.5;
+	const easySpeed = Math.hypot(...Object.values(plan('easy', steadyRandom).velocity));
+	const mediumSpeed = Math.hypot(...Object.values(plan('medium', steadyRandom).velocity));
+	const hardSpeed = Math.hypot(...Object.values(plan('hard', steadyRandom).velocity));
+	assert.ok(easySpeed < mediumSpeed, `${easySpeed} should be below ${mediumSpeed}`);
+	assert.ok(mediumSpeed < hardSpeed, `${mediumSpeed} should be below ${hardSpeed}`);
 });
 
 test('CPU avoids a blocked approach when another counter has a clear route', () => {

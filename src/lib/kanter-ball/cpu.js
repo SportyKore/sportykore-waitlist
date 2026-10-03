@@ -2,9 +2,9 @@ const DEFAULT_PITCH = { x: 48, y: 58, width: 624, height: 864 };
 const DEFAULT_GOAL = { width: 186, depth: 34 };
 
 export const CPU_DIFFICULTIES = {
-	easy: { choicePool: 3, targetError: 42, powerError: 0.1, strength: 0.78 },
-	medium: { choicePool: 2, targetError: 18, powerError: 0.05, strength: 0.9 },
-	hard: { choicePool: 1, targetError: 5, powerError: 0.018, strength: 1 },
+	easy: { choicePool: 3, targetError: 52, powerError: 0.14, strength: 0.72, impactSpeed: 280, alignmentWeight: 90 },
+	medium: { choicePool: 2, targetError: 18, powerError: 0.055, strength: 0.9, impactSpeed: 405, alignmentWeight: 210 },
+	hard: { choicePool: 1, targetError: 2, powerError: 0.008, strength: 1.08, impactSpeed: 540, alignmentWeight: 390 },
 };
 
 /**
@@ -28,27 +28,15 @@ export function planCpuTurn({
 	const profile = CPU_DIFFICULTIES[difficulty] || CPU_DIFFICULTIES.medium;
 	const allCaps = [...cpuCaps, ...playerCaps];
 	const defensiveDanger = ball.y < pitch.y + pitch.height * 0.3;
-	const intent = defensiveDanger ? 'clear' : 'attack';
+	const intent = 'attack';
 	const targetY = pitch.y + pitch.height + goal.depth;
 	const goalCenter = pitch.x + pitch.width / 2;
 	const laneOffset = goal.width * 0.27;
-	const targets = defensiveDanger
-		? [
-			{
-				x: clamp(
-					ball.x < goalCenter ? goalCenter + 120 : goalCenter - 120,
-					pitch.x + 90,
-					pitch.x + pitch.width - 90
-				),
-				y: pitch.y + pitch.height * 0.63,
-			},
-			{ x: goalCenter, y: pitch.y + pitch.height * 0.62 },
-		]
-		: [
-			{ x: goalCenter, y: targetY },
-			{ x: goalCenter - laneOffset, y: targetY },
-			{ x: goalCenter + laneOffset, y: targetY },
-		];
+	const targets = [
+		{ x: goalCenter, y: targetY },
+		{ x: goalCenter - laneOffset, y: targetY },
+		{ x: goalCenter + laneOffset, y: targetY },
+	];
 
 	const plans = [];
 	for (let capIndex = 0; capIndex < cpuCaps.length; capIndex += 1) {
@@ -57,6 +45,10 @@ export function planCpuTurn({
 
 		for (const target of targets) {
 			const ballDirection = normalize({ x: target.x - ball.x, y: target.y - ball.y });
+			const naturalDirection = normalize({ x: ball.x - cap.x, y: ball.y - cap.y });
+			const alignmentError = Math.acos(
+				clamp(naturalDirection.x * ballDirection.x + naturalDirection.y * ballDirection.y, -1, 1)
+			);
 			const contactDistance = (cap.r || 24) + (ball.r || 14) - 2;
 			const contactPoint = {
 				x: ball.x - ballDirection.x * contactDistance,
@@ -72,10 +64,11 @@ export function planCpuTurn({
 			);
 			const laneClearance = pathClearance(ball, target, allCaps, cap, (ball.r || 14) + 3);
 			const blockedApproach = approachClearance < 0;
-			const keeperPenalty = cap.role === 'keeper' ? 310 : 0;
+			const keeperPenalty = cap.role === 'keeper' ? (defensiveDanger ? 80 : 310) : 0;
 			const ownerAdjustment = cap.owner ? 4 : 0;
 			const score =
 				approachDistance +
+				alignmentError * profile.alignmentWeight +
 				keeperPenalty +
 				ownerAdjustment +
 				(blockedApproach ? 900 + Math.abs(approachClearance) * 8 : 0) -
@@ -88,6 +81,7 @@ export function planCpuTurn({
 				contactPoint,
 				ballDirection,
 				approachDistance,
+				alignmentError,
 				blockedApproach,
 				score,
 			});
@@ -104,7 +98,7 @@ export function planCpuTurn({
 	const aimOffset = signedRandom(random) * profile.targetError;
 	const target = {
 		...chosen.target,
-		x: clamp(chosen.target.x + aimOffset, pitch.x + 36, pitch.x + pitch.width - 36),
+		x: clamp(chosen.target.x + aimOffset, goalCenter - goal.width * 0.42, goalCenter + goal.width * 0.42),
 	};
 	const ballDirection = normalize({ x: target.x - ball.x, y: target.y - ball.y });
 	const contactDistance = (chosen.cap.r || 24) + (ball.r || 14) - 2;
@@ -117,14 +111,14 @@ export function planCpuTurn({
 		contactPoint.x - chosen.cap.x
 	);
 	const approachDistance = distance(chosen.cap, contactPoint);
-	const desiredImpactSpeed = intent === 'clear' ? 325 : 405;
+	const desiredImpactSpeed = profile.impactSpeed;
 	const speedForContact = Math.sqrt(
 		Math.max(0, desiredImpactSpeed ** 2 + 2 * friction * approachDistance)
 	);
 	const maximumSpeed = maxDrag * powerScale * profile.strength;
 	const speed = clamp(
 		speedForContact * (1 + signedRandom(random) * profile.powerError),
-		maxDrag * powerScale * 0.5,
+		maxDrag * powerScale * 0.34,
 		maximumSpeed
 	);
 
@@ -135,6 +129,7 @@ export function planCpuTurn({
 		target,
 		contactPoint,
 		aimOffset,
+		alignmentError: chosen.alignmentError,
 		intent,
 		blockedApproach: chosen.blockedApproach,
 	};
