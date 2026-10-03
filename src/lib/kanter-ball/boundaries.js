@@ -198,6 +198,48 @@ export function goalKickKeeperPositions({ event, pitch, ballRadius = 14, capRadi
 	};
 }
 
+export function restartClearancePositions({ caps, anchors, pitch, padding = 8 }) {
+	const occupied = [...anchors];
+	return caps.map((cap) => {
+		const position = findClearPosition(cap, occupied, pitch, padding);
+		occupied.push({ ...cap, ...position });
+		return position;
+	});
+}
+
+function findClearPosition(body, occupied, pitch, padding) {
+	const inside = (point) =>
+		point.x >= pitch.x + body.r &&
+		point.x <= pitch.x + pitch.width - body.r &&
+		point.y >= pitch.y + body.r &&
+		point.y <= pitch.y + pitch.height - body.r;
+	const clear = (point) =>
+		inside(point) &&
+		occupied.every(
+			(other) => Math.hypot(point.x - other.x, point.y - other.y) >= body.r + other.r + padding
+		);
+	const origin = {
+		x: clamp(body.x, pitch.x + body.r, pitch.x + pitch.width - body.r),
+		y: clamp(body.y, pitch.y + body.r, pitch.y + pitch.height - body.r),
+	};
+	if (clear(origin)) return origin;
+
+	const radialStep = Math.max(12, body.r * 0.65);
+	const maximumRadius = Math.hypot(pitch.width, pitch.height);
+	for (let radius = radialStep; radius <= maximumRadius; radius += radialStep) {
+		for (let index = 0; index < 24; index += 1) {
+			const angle = (Math.PI * 2 * index) / 24;
+			const candidate = {
+				x: origin.x + Math.cos(angle) * radius,
+				y: origin.y + Math.sin(angle) * radius,
+			};
+			if (clear(candidate)) return candidate;
+		}
+	}
+
+	return origin;
+}
+
 function crossing(edge, before, after, threshold) {
 	const crossed =
 		edge === 'left' || edge === 'top'

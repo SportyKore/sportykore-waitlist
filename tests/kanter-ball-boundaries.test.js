@@ -8,6 +8,7 @@ import {
 	isBallEnteringGoal,
 	liveGoalMouthEdge,
 	restartPlacement,
+	restartClearancePositions,
 	resolveCounterWalls,
 	shouldRecordLastTouch,
 } from '../src/lib/kanter-ball/boundaries.js';
@@ -133,6 +134,19 @@ test('defender touching the ball over its own goal line produces a corner', () =
 	assert.equal(result.awardedTo, 'player');
 });
 
+test('a deflection that pushes the ball across the line is still detected immediately', () => {
+	const result = detectBoundaryEvent({
+		previous: { x: 170, y: 46 },
+		ball: { x: 170, y: 42, r: 14 },
+		pitch,
+		goal,
+		lastTouch: 'cpu',
+		fallbackTouch: 'player',
+	});
+	assert.equal(result.type, 'corner');
+	assert.equal(result.awardedTo, 'player');
+});
+
 test('bottom goal-line decisions are mirrored for the player defence', () => {
 	const goalKick = event({ x: 170, y: 900 }, { x: 170, y: 950 }, 'cpu');
 	const corner = event({ x: 170, y: 900 }, { x: 170, y: 950 }, 'player');
@@ -177,4 +191,91 @@ test('goal kicks return both keepers to their own goal areas', () => {
 	const topPositions = goalKickKeeperPositions({ event: topRestart, pitch });
 	assert.deepEqual(topPositions.cpu, { x: 360, y: 164 });
 	assert.deepEqual(topPositions.player, { x: 360, y: 883 });
+});
+
+test('crowded restart areas are cleared without stacking any pieces', () => {
+	const restart = { type: 'corner', edge: 'top', awardedTo: 'player', exitPoint: { x: 70, y: 20 } };
+	const placement = restartPlacement({ event: restart, pitch });
+	const anchors = [
+		{ ...placement.ball, r: 14 },
+		{ ...placement.taker, r: 24 },
+	];
+	const caps = Array.from({ length: 12 }, (_, index) => ({
+		x: index % 2 ? placement.ball.x : placement.taker.x,
+		y: index % 2 ? placement.ball.y : placement.taker.y,
+		r: 24,
+	}));
+	const positions = restartClearancePositions({ caps, anchors, pitch });
+	const resolved = positions.map((position, index) => ({ ...caps[index], ...position }));
+	const allBodies = [...anchors, ...resolved];
+
+	for (const body of resolved) {
+		assert.ok(body.x >= pitch.x + body.r && body.x <= pitch.x + pitch.width - body.r);
+		assert.ok(body.y >= pitch.y + body.r && body.y <= pitch.y + pitch.height - body.r);
+	}
+	for (let first = 0; first < allBodies.length; first += 1) {
+		for (let second = first + 1; second < allBodies.length; second += 1) {
+			const a = allBodies[first];
+			const b = allBodies[second];
+			const requiredPadding = first < anchors.length && second < anchors.length ? 5 : 8;
+			assert.ok(Math.hypot(a.x - b.x, a.y - b.y) >= a.r + b.r + requiredPadding - 0.001);
+		}
+	}
+});
+
+test('consecutive restarts keep producing playable placements', () => {
+	const events = [
+		{ type: 'throw_in', edge: 'left', exitPoint: { x: 20, y: 120 } },
+		{ type: 'corner', edge: 'bottom', exitPoint: { x: 650, y: 950 } },
+		{ type: 'goal_kick', edge: 'top', exitPoint: { x: 150, y: 20 } },
+		{ type: 'throw_in', edge: 'right', exitPoint: { x: 700, y: 820 } },
+	];
+	let caps = Array.from({ length: 10 }, (_, index) => ({ x: 90 + index * 48, y: 500, r: 24 }));
+
+	for (const restart of events) {
+		const placement = restartPlacement({ event: restart, pitch });
+		const taker = { ...caps[0], ...placement.taker };
+		const ballAtRestart = { ...placement.ball, r: 14 };
+		const movable = caps.slice(1);
+		const positions = restartClearancePositions({
+			caps: movable,
+			anchors: [ballAtRestart, taker],
+			pitch,
+		});
+		caps = [taker, ...positions.map((position, index) => ({ ...movable[index], ...position }))];
+		assert.ok(Math.hypot(taker.x - ballAtRestart.x, taker.y - ballAtRestart.y) > taker.r + ballAtRestart.r);
+		assert.ok(caps.every((cap) => Number.isFinite(cap.x) && Number.isFinite(cap.y)));
+	}
+});
+
+test('post and corner wall resolution remains finite under repeated impacts', () => {
+	let seed = 29;
+	const random = () => {
+		seed = (seed * 48271) % 2147483647;
+		return seed / 2147483647;
+	};
+	const goalLeft = pitch.x + pitch.width / 2 - goal.width / 2;
+	const goalRight = pitch.x + pitch.width / 2 + goal.width / 2;
+
+	for (let index = 0; index < 500; index += 1) {
+		const result = resolveCounterWalls({
+			body: {
+				x: goalLeft - 40 + random() * (goal.width + 80),
+				y: pitch.y + pitch.height - 30 + random() * 90,
+				r: 14 + random() * 11,
+				vx: -300 + random() * 600,
+				vy: -300 + random() * 600,
+			},
+			pitch,
+			goal,
+		});
+		assert.ok([result.x, result.y, result.vx, result.vy].every(Number.isFinite));
+		assert.ok(result.x - result.r >= pitch.x - 0.001);
+		assert.ok(result.x + result.r <= pitch.x + pitch.width + 0.001);
+		assert.ok(result.y + result.r <= pitch.y + pitch.height + goal.depth + 0.001);
+		if (result.y > pitch.y + pitch.height) {
+			assert.ok(result.x - result.r >= goalLeft - 0.001);
+			assert.ok(result.x + result.r <= goalRight + 0.001);
+		}
+	}
 });

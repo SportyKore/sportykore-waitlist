@@ -493,6 +493,7 @@ import {
 import { modeProfile } from '../lib/kanter-ball/modes.js';
 import { OWNER_COMMENTARY, ownerReaction, OWNER_LIMITS } from '../lib/kanter-ball/owner.js';
 import { advanceMatchClock, crossedCountdownThreshold } from '../lib/kanter-ball/pacing.js';
+import { collisionGeometry, lastTouchAfterCollision } from '../lib/kanter-ball/physics.js';
 import { classifyGoal } from '../lib/kanter-ball/scoring.js';
 import {
 	detectBoundaryEvent,
@@ -500,8 +501,8 @@ import {
 	insetPitch,
 	liveGoalMouthEdge,
 	restartPlacement,
+	restartClearancePositions,
 	resolveCounterWalls,
-	shouldRecordLastTouch,
 } from '../lib/kanter-ball/boundaries.js';
 
 (() => {
@@ -1187,7 +1188,19 @@ import {
 		for (let i = 0; i < bodies.length; i += 1) {
 			for (let j = i + 1; j < bodies.length; j += 1) collideBodies(bodies[i], bodies[j]);
 		}
-		if (state.rulesMode === 'street') checkGoal();
+		if (state.rulesMode === 'street') {
+			checkGoal();
+			return;
+		}
+		const deflectedBoundaryEvent = detectBoundaryEvent({
+			previous: previousBall,
+			ball,
+			pitch: FIELD,
+			goal: GOAL,
+			lastTouch: state.lastTouch,
+			fallbackTouch: state.currentShot?.side,
+		});
+		if (deflectedBoundaryEvent) handleBoundaryEvent(deflectedBoundaryEvent);
 	}
 
 	function handleBoundaryEvent(event) {
@@ -1220,11 +1233,11 @@ import {
 			if (playerKeeper) Object.assign(playerKeeper, keeperPositions.player);
 			if (cpuKeeper) Object.assign(cpuKeeper, keeperPositions.cpu);
 			taker = event.awardedTo === 'player' ? playerKeeper || taker : cpuKeeper || taker;
-			clearGoalKickSpace([playerKeeper, cpuKeeper].filter(Boolean));
 		} else {
 			taker.x = placement.taker.x;
 			taker.y = placement.taker.y;
 		}
+		clearRestartSpace([taker]);
 		state.currentShot = null;
 		state.selectedCap = null;
 		state.restartTaker = taker;
@@ -1240,30 +1253,17 @@ import {
 		track('restart_awarded', { type: event.type, side: event.awardedTo, rules: state.rulesMode });
 	}
 
-	function clearGoalKickSpace(keepers) {
-		const anchors = [ball, ...keepers];
-		for (const cap of [...playerCaps, ...cpuCaps]) {
-			if (cap.role === 'keeper') continue;
-			for (const anchor of anchors) {
-				const minimumDistance = cap.r + anchor.r + 8;
-				let dx = cap.x - anchor.x;
-				let dy = cap.y - anchor.y;
-				let currentDistance = Math.hypot(dx, dy);
-				if (currentDistance >= minimumDistance) continue;
-				if (currentDistance < 0.001) {
-					dx = cap.x <= FIELD.x + FIELD.width / 2 ? -1 : 1;
-					dy = cap.side === 'player' ? -1 : 1;
-					currentDistance = Math.hypot(dx, dy);
-				}
-				cap.x = Math.min(
-					FIELD.x + FIELD.width - cap.r,
-					Math.max(FIELD.x + cap.r, anchor.x + (dx / currentDistance) * minimumDistance)
-				);
-				cap.y = Math.min(
-					FIELD.y + FIELD.height - cap.r,
-					Math.max(FIELD.y + cap.r, anchor.y + (dy / currentDistance) * minimumDistance)
-				);
-			}
+	function clearRestartSpace(protectedCaps) {
+		const protectedSet = new Set(protectedCaps.filter(Boolean));
+		const movableCaps = [...playerCaps, ...cpuCaps].filter((cap) => !protectedSet.has(cap));
+		const positions = restartClearancePositions({
+			caps: movableCaps,
+			anchors: [ball, ...protectedSet],
+			pitch: FIELD,
+		});
+		for (let index = 0; index < movableCaps.length; index += 1) {
+			movableCaps[index].x = positions[index].x;
+			movableCaps[index].y = positions[index].y;
 		}
 	}
 
@@ -1290,19 +1290,11 @@ import {
 	}
 
 	function collideBodies(a, b) {
-		const dx = b.x - a.x;
-		const dy = b.y - a.y;
-		const dist = Math.hypot(dx, dy);
-		const minDist = a.r + b.r;
-		if (dist <= 0 || dist >= minDist) return;
-		let nx = dx / dist;
-		let ny = dy / dist;
 		const predictedImpact = predictedBallImpactNormal(a, b);
-		if (predictedImpact) {
-			nx = predictedImpact.x;
-			ny = predictedImpact.y;
-		}
-		const overlap = minDist - dist;
+		const collision = collisionGeometry({ a, b, preferredNormal: predictedImpact });
+		if (!collision) return;
+		const { x: nx, y: ny } = collision.normal;
+		const { overlap } = collision;
 		a.x -= (nx * overlap) / 2;
 		a.y -= (ny * overlap) / 2;
 		b.x += (nx * overlap) / 2;
@@ -1321,10 +1313,13 @@ import {
 			) {
 				state.currentShot.predictedBallDirection = null;
 			}
-			if (shouldRecordLastTouch(speed)) {
-				if (a === ball && b.type === 'cap') state.lastTouch = b.side;
-				if (b === ball && a.type === 'cap') state.lastTouch = a.side;
-			}
+			state.lastTouch = lastTouchAfterCollision({
+				currentTouch: state.lastTouch,
+				a,
+				b,
+				ball,
+				relativeNormalSpeed: speed,
+			});
 			const impulse = (-(1 + currentMode().physics.restitution) * speed) / (1 / a.mass + 1 / b.mass);
 			const ix = impulse * nx;
 			const iy = impulse * ny;
