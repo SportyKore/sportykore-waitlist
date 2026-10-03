@@ -35,6 +35,26 @@ test('shows an open lane when no body is in the guide', () => {
 	assert.ok(Number.isFinite(aim.guideEnd.y));
 });
 
+test('extends the direction guide to the pitch boundary regardless of shot power', () => {
+	const bounds = { x: 0, y: 0, width: 720, height: 980 };
+	const lowPower = analyzeAim({
+		cap,
+		ball: { ...ball, y: 300 },
+		drag: { x: 12, y: 0 },
+		maxDrag: 125,
+		bounds,
+	});
+	const fullPower = analyzeAim({
+		cap,
+		ball: { ...ball, y: 300 },
+		drag: { x: 125, y: 0 },
+		maxDrag: 125,
+		bounds,
+	});
+	assert.equal(lowPower.guideEnd.x, 695);
+	assert.equal(fullPower.guideEnd.x, 695);
+});
+
 test('does not draw a directional claim for a tap-sized drag', () => {
 	const aim = analyzeAim({ cap, ball, drag: { x: 4, y: 3 }, maxDrag: 125 });
 	assert.equal(aim.status, 'idle');

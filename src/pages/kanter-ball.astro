@@ -584,7 +584,6 @@ import {
 			lines: ['Time up! Good game'],
 			clips: ['/audio/kanter-ball/match-ends.m4a'],
 			volume: 0.55,
-			clipEnd: 3.25,
 		},
 	};
 	const AMBIENCE = {
@@ -1519,7 +1518,7 @@ import {
 		if (!state.dragging || !state.selectedCap || !state.dragPoint) return;
 		const cap = state.selectedCap;
 		const drag = clampVector({ x: cap.x - state.dragPoint.x, y: cap.y - state.dragPoint.y }, PHYSICS.maxDrag);
-		const aim = analyzeAim({ cap, drag, ball, obstacles: bodies, maxDrag: PHYSICS.maxDrag });
+		const aim = analyzeAim({ cap, drag, ball, obstacles: bodies, maxDrag: PHYSICS.maxDrag, bounds: FIELD });
 		if (aim.status === 'idle') return;
 		const invalidKeeper = isInvalidKeeperFlick(cap, drag);
 		const blocked = aim.status === 'blocked';
@@ -1813,13 +1812,6 @@ import {
 			const audio = new Audio(randomFrom(item.clips));
 			audio.volume = item.volume ?? 0.9;
 			state.audio.commentaryAudio = audio;
-			if (item.clipEnd) {
-				audio.addEventListener('timeupdate', () => {
-					if (audio.currentTime < item.clipEnd) return;
-					audio.pause();
-					if (state.audio.commentaryAudio === audio) state.audio.commentaryAudio = null;
-				});
-			}
 			audio.addEventListener('loadedmetadata', () => duckAmbience(audio.duration + 0.45), { once: true });
 			let usedFallback = false;
 			const fallback = () => {

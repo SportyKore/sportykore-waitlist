@@ -15,7 +15,21 @@ function rayCircleEntry(origin, direction, target, radius) {
 	return Math.max(0, projection - Math.sqrt(Math.max(0, radiusSquared - perpendicularSquared)));
 }
 
-export function analyzeAim({ cap, drag, ball, obstacles = [], maxDrag, maxGuideDistance = 310 }) {
+function rayBoundsDistance(origin, direction, bounds, radius) {
+	if (!bounds) return 2000;
+	const left = bounds.x + radius;
+	const right = bounds.x + bounds.width - radius;
+	const top = bounds.y + radius;
+	const bottom = bounds.y + bounds.height - radius;
+	const distances = [];
+	if (direction.x > 0) distances.push((right - origin.x) / direction.x);
+	if (direction.x < 0) distances.push((left - origin.x) / direction.x);
+	if (direction.y > 0) distances.push((bottom - origin.y) / direction.y);
+	if (direction.y < 0) distances.push((top - origin.y) / direction.y);
+	return Math.min(...distances.filter((distance) => distance >= 0 && Number.isFinite(distance)));
+}
+
+export function analyzeAim({ cap, drag, ball, obstacles = [], maxDrag, bounds = null }) {
 	const magnitude = Math.hypot(drag?.x || 0, drag?.y || 0);
 	const power = maxDrag > 0 ? clamp01(magnitude / maxDrag) : 0;
 	if (!cap || !ball || magnitude < MIN_AIM_DISTANCE) {
@@ -32,7 +46,7 @@ export function analyzeAim({ cap, drag, ball, obstacles = [], maxDrag, maxGuideD
 	}
 
 	const direction = { x: drag.x / magnitude, y: drag.y / magnitude };
-	const guideDistance = Math.min(maxGuideDistance, 78 + power * (maxGuideDistance - 78));
+	const guideDistance = rayBoundsDistance(cap, direction, bounds, cap.r || 0);
 	const targets = [ball, ...obstacles.filter((body) => body && body !== cap && body !== ball)];
 	const collisions = targets
 		.map((target) => ({
