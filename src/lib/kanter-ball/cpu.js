@@ -1,3 +1,5 @@
+import { isBallInKeeperDanger } from './keeper.js';
+
 const DEFAULT_PITCH = { x: 48, y: 58, width: 624, height: 864 };
 const DEFAULT_GOAL = { width: 186, depth: 34 };
 
@@ -27,7 +29,7 @@ export function planCpuTurn({
 
 	const profile = CPU_DIFFICULTIES[difficulty] || CPU_DIFFICULTIES.medium;
 	const allCaps = [...cpuCaps, ...playerCaps];
-	const defensiveDanger = ball.y < pitch.y + pitch.height * 0.3;
+	const defensiveDanger = isBallInKeeperDanger({ side: 'cpu', ball, pitch });
 	const intent = 'attack';
 	const targetY = pitch.y + pitch.height + goal.depth;
 	const goalCenter = pitch.x + pitch.width / 2;

@@ -485,6 +485,7 @@ const gameSchema = {
 
 <script>
 import { planCpuTurn } from '../lib/kanter-ball/cpu.js';
+import { isBallInKeeperDanger, nextKeeperRecoveryPosition } from '../lib/kanter-ball/keeper.js';
 import { advanceMatchClock, MATCH_PACING } from '../lib/kanter-ball/pacing.js';
 import {
 	detectBoundaryEvent,
@@ -885,6 +886,15 @@ import {
 		if (state.mode !== 'running' || state.turn !== 'player' || !isSettled()) return false;
 		const cap = playerCaps.find((item) => distance(point, item) <= item.r + 18);
 		if (!cap) return false;
+		if (
+			state.rulesMode === 'football' &&
+			cap.role === 'keeper' &&
+			cap !== state.restartTaker &&
+			!isBallInKeeperDanger({ side: 'player', ball, pitch: FIELD })
+		) {
+			showToast('Keeper stays home until the ball enters your defensive third.');
+			return false;
+		}
 		state.selectedCap = cap;
 		state.dragging = true;
 		state.dragPoint = point;
@@ -1028,12 +1038,32 @@ import {
 		} else if (!shot.scored && shot.touchedBall && Math.random() < 0.12) {
 			playCommentary('near_miss');
 		}
+		recoverKeepers();
 		state.currentShot = null;
 		state.selectedCap = null;
 		state.turn = shot.side === 'player' ? 'cpu' : 'player';
 		state.settleTimer = 0;
 		if (state.mode === 'running') {
 			showToast(state.turn === 'player' ? 'Your turn.' : 'Computer turn.');
+		}
+	}
+
+	function recoverKeepers() {
+		if (state.rulesMode !== 'football' || state.mode !== 'running') return;
+		for (const keeper of [
+			playerCaps.find((cap) => cap.role === 'keeper'),
+			cpuCaps.find((cap) => cap.role === 'keeper'),
+		].filter(Boolean)) {
+			const candidate = nextKeeperRecoveryPosition({ keeper, side: keeper.side, ball, pitch: FIELD });
+			if (!candidate.moved) continue;
+			const blocked = bodies.some(
+				(body) =>
+					body !== keeper &&
+					Math.hypot(body.x - candidate.x, body.y - candidate.y) < body.r + keeper.r + 4
+			);
+			if (blocked) continue;
+			keeper.x = candidate.x;
+			keeper.y = candidate.y;
 		}
 	}
 
