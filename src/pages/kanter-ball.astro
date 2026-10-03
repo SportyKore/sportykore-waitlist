@@ -95,16 +95,24 @@ const gameSchema = {
 									Select a cap, drag back, and release. You and the computer take
 									one flick at a time.
 								</p>
+								<div class="kanter-option-label">Game rules</div>
 								<div class="kanter-rules" role="group" aria-label="Choose match rules">
-									<button type="button" data-rules="football" class="is-active">Football</button>
-									<button type="button" data-rules="street">Street</button>
+									<button type="button" data-rules="football" class="is-active">
+										<span>Football</span>
+										<small>Throw-ins, corners and goal kicks</small>
+									</button>
+									<button type="button" data-rules="street">
+										<span>Street</span>
+										<small>Walls rebound the ball</small>
+									</button>
 								</div>
+								<div class="kanter-option-label">Difficulty</div>
 								<div class="kanter-difficulty" role="group" aria-label="Choose difficulty">
 									<button type="button" data-difficulty="easy">Easy</button>
 									<button type="button" data-difficulty="medium" class="is-active">Medium</button>
 									<button type="button" data-difficulty="hard">Hard</button>
 								</div>
-								<button type="button" class="btn-cta" data-start>Tap to play</button>
+								<button type="button" class="btn-cta" data-start>Play Football · Medium</button>
 							</div>
 						</div>
 
@@ -349,6 +357,16 @@ const gameSchema = {
 		grid-template-columns: repeat(2, minmax(0, 1fr));
 	}
 
+	.kanter-option-label {
+		margin: 0 0 0.45rem;
+		color: rgba(248, 248, 250, 0.62);
+		font-size: 0.68rem;
+		font-weight: 800;
+		letter-spacing: 0.1em;
+		text-align: left;
+		text-transform: uppercase;
+	}
+
 	.kanter-difficulty button,
 	.kanter-rules button {
 		border: 1px solid rgba(248, 248, 250, 0.18);
@@ -365,6 +383,26 @@ const gameSchema = {
 		border-color: var(--cta-gold);
 		background: var(--cta-gold);
 		color: #171717;
+	}
+
+	.kanter-rules button {
+		display: flex;
+		min-height: 4.15rem;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		line-height: 1.2;
+	}
+
+	.kanter-rules button small {
+		margin-top: 0.25rem;
+		color: rgba(248, 248, 250, 0.58);
+		font-size: 0.62rem;
+		font-weight: 600;
+	}
+
+	.kanter-rules button.is-active small {
+		color: rgba(23, 23, 23, 0.72);
 	}
 
 	.kanter-end-actions {
@@ -692,7 +730,7 @@ import {
 		}
 		if (endTitle) endTitle.textContent = result.title;
 		if (endCopy) {
-			endCopy.textContent = `${state.playerScore}-${state.cpuScore} on ${difficultyLabel()}. Best streak: ${state.records.bestStreak}.`;
+			endCopy.textContent = `${state.playerScore}-${state.cpuScore} · ${rulesLabel()} · ${difficultyLabel()}. Best streak: ${state.records.bestStreak}.`;
 		}
 		endOverlay?.classList.add('is-visible');
 		playCommentary(reason === 'owner_collect' ? 'owner_collect' : 'full_time');
@@ -1384,7 +1422,8 @@ import {
 		if (timeEl) timeEl.textContent = String(Math.max(0, Math.ceil(state.remaining)));
 		if (recordEl) recordEl.textContent = String(state.records.bestStreak);
 		if (difficultyPill) difficultyPill.textContent = difficultyLabel();
-		if (rulesPill) rulesPill.textContent = state.rulesMode === 'football' ? 'Football rules' : 'Street rebound';
+		if (rulesPill) rulesPill.textContent = rulesLabel();
+		if (startButton) startButton.textContent = `Play ${rulesLabel()} · ${difficultyLabel()}`;
 		if (turnPill) {
 			turnPill.textContent =
 				state.turn === 'player' ? 'Your turn' : state.turn === 'cpu' ? 'Computer turn' : 'Ball moving';
@@ -1570,7 +1609,7 @@ import {
 
 	async function shareResult() {
 		const url = new URL('/kanter-ball', window.location.origin).href;
-		const text = `I beat the computer ${state.playerScore}-${state.cpuScore} on ${difficultyLabel()} in Sportykore Kanter Ball. You try: ${url}`;
+		const text = `I played the computer ${state.playerScore}-${state.cpuScore} on ${rulesLabel()} · ${difficultyLabel()} in Sportykore Kanter Ball. You try: ${url}`;
 		track('share_click', currentResultData('share'));
 		if (navigator.share) {
 			try {
@@ -1630,6 +1669,10 @@ import {
 
 	function difficultyLabel() {
 		return DIFFICULTIES[state.difficulty].label;
+	}
+
+	function rulesLabel() {
+		return state.rulesMode === 'football' ? 'Football rules' : 'Street rules';
 	}
 
 	function closestTo(items, point) {
