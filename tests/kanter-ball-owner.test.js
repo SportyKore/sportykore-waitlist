@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { ownerReaction, OWNER_LIMITS } from '../src/lib/kanter-ball/owner.js';
+import { OWNER_COMMENTARY, ownerReaction, OWNER_LIMITS } from '../src/lib/kanter-ball/owner.js';
 
 test('owner anger escalates through calm, warning, vexed and collection stages', () => {
 	assert.equal(ownerReaction(0).stage, 'calm');
@@ -23,4 +23,11 @@ test('each owner stage selects the matching commentary cue', () => {
 	assert.equal(ownerReaction(OWNER_LIMITS.warnStart).commentary, 'owner_2');
 	assert.equal(ownerReaction(OWNER_LIMITS.vexStart).commentary, 'owner_vex');
 	assert.equal(ownerReaction(OWNER_LIMITS.collectAt).commentary, 'owner_collect');
+});
+
+test('owner stages have spoken Nigerian Pidgin lines', () => {
+	assert.equal(OWNER_COMMENTARY.owner_1, 'Na him be the owner. No vex am.');
+	assert.equal(OWNER_COMMENTARY.owner_2, 'Owner dey warn you. Owner go soon collect e ball o.');
+	assert.equal(OWNER_COMMENTARY.owner_vex, 'Owner don dey vex o!');
+	assert.equal(OWNER_COMMENTARY.owner_collect, 'Owner don collect e ball!');
 });

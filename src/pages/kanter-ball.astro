@@ -486,7 +486,7 @@ const gameSchema = {
 <script>
 import { planCpuTurn } from '../lib/kanter-ball/cpu.js';
 import { isBallInKeeperDanger, nextKeeperRecoveryPosition } from '../lib/kanter-ball/keeper.js';
-import { ownerReaction, OWNER_LIMITS } from '../lib/kanter-ball/owner.js';
+import { OWNER_COMMENTARY, ownerReaction, OWNER_LIMITS } from '../lib/kanter-ball/owner.js';
 import { advanceMatchClock, MATCH_PACING } from '../lib/kanter-ball/pacing.js';
 import {
 	detectBoundaryEvent,
@@ -562,11 +562,11 @@ import {
 		goal: { lines: ['Goooal!', 'Na goal be that!', 'Sweet finish!'], clips: [] },
 		near_miss: { lines: ['Ah! Close one', 'Bad luck'], clips: [] },
 		save: { lines: ['Keeper save am!', 'No entry!'], clips: [] },
-		owner_1: { lines: ['Una know say na him be owner of the ball o. No vex am.'], clips: [] },
-		owner_2: { lines: ['Una know say na him be owner of the ball o. Him go collect him ball o.'], clips: [] },
-		owner_vex: { lines: ['Owner of the ball don dey vex o!'], clips: [] },
-		owner_warn: { lines: ['Owner don warn una o!'], clips: [] },
-		owner_collect: { lines: ['Owner don collect him ball!'], clips: [] },
+		owner_1: { lines: [OWNER_COMMENTARY.owner_1], clips: [] },
+		owner_2: { lines: [OWNER_COMMENTARY.owner_2], clips: [] },
+		owner_vex: { lines: [OWNER_COMMENTARY.owner_vex], clips: [] },
+		owner_warn: { lines: [OWNER_COMMENTARY.owner_warn], clips: [] },
+		owner_collect: { lines: [OWNER_COMMENTARY.owner_collect], clips: [] },
 		time_low: { lines: ['Time dey go oo!'], clips: [] },
 		full_time: { lines: ['Time up! Good game'], clips: [] },
 	};
@@ -1693,7 +1693,15 @@ import {
 		const item = COMMENTARY[eventName];
 		if (!item) return;
 		duckAmbience();
-		const priority = ['goal', 'owner_collect', 'full_time', 'owner_vex'];
+		const priority = [
+			'goal',
+			'owner_1',
+			'owner_2',
+			'owner_warn',
+			'owner_vex',
+			'owner_collect',
+			'full_time',
+		];
 		if ('speechSynthesis' in window && priority.includes(eventName)) {
 			window.speechSynthesis.cancel();
 		} else if ('speechSynthesis' in window && window.speechSynthesis.speaking) {
@@ -1708,6 +1716,11 @@ import {
 		if (!('speechSynthesis' in window) || !item.lines.length) return;
 		const utterance = new SpeechSynthesisUtterance(randomFrom(item.lines));
 		utterance.lang = 'en-NG';
+		const voices = window.speechSynthesis.getVoices();
+		utterance.voice =
+			voices.find((voice) => voice.lang.toLowerCase() === 'en-ng') ||
+			voices.find((voice) => voice.lang.toLowerCase().startsWith('en-ng')) ||
+			null;
 		utterance.rate = 1;
 		utterance.pitch = 1;
 		utterance.volume = 0.95;
