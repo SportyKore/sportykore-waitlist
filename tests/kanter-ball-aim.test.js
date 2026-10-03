@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { analyzeAim } from '../src/lib/kanter-ball/aim.js';
+import { analyzeAim, selectionRadius } from '../src/lib/kanter-ball/aim.js';
 
 const cap = { x: 100, y: 100, r: 25, type: 'cap' };
 const ball = { x: 250, y: 100, r: 14, type: 'ball' };
@@ -115,4 +115,11 @@ test('does not draw a directional claim for a tap-sized drag', () => {
 	assert.equal(aim.status, 'idle');
 	assert.deepEqual(aim.direction, { x: 0, y: 0 });
 	assert.equal(aim.ballPath, null);
+});
+
+test('small screens retain a finger-sized cap selection target', () => {
+	const narrowRadius = selectionRadius({ bodyRadius: 24, canvasCssWidth: 288, worldWidth: 720 });
+	const wideRadius = selectionRadius({ bodyRadius: 24, canvasCssWidth: 560, worldWidth: 720 });
+	assert.ok((narrowRadius / 720) * 288 >= 24);
+	assert.equal(wideRadius, 42);
 });

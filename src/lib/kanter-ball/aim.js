@@ -1,5 +1,10 @@
 const MIN_AIM_DISTANCE = 10;
 
+export function selectionRadius({ bodyRadius, canvasCssWidth, worldWidth, minimumCssRadius = 24 }) {
+	if (!(canvasCssWidth > 0) || !(worldWidth > 0)) return bodyRadius + 18;
+	return Math.max(bodyRadius + 18, (minimumCssRadius * worldWidth) / canvasCssWidth);
+}
+
 function clamp01(value) {
 	return Math.max(0, Math.min(1, value));
 }

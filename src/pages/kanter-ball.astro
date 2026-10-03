@@ -222,6 +222,7 @@ const gameSchema = {
 
 	.kanter-icon-button {
 		grid-column: 1 / -1;
+		min-height: 2.75rem;
 		color: #ffffff;
 		font-size: 0.75rem;
 		font-weight: 800;
@@ -229,7 +230,7 @@ const gameSchema = {
 
 	.kanter-meta {
 		display: grid;
-		grid-template-columns: 1fr;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
 		gap: 0.5rem;
 		margin-bottom: 0.65rem;
 	}
@@ -256,6 +257,8 @@ const gameSchema = {
 			linear-gradient(180deg, #1e7a40, #14552e);
 		box-shadow: var(--shadow-phone);
 		touch-action: none;
+		user-select: none;
+		-webkit-user-select: none;
 	}
 
 	.kanter-canvas {
@@ -311,7 +314,10 @@ const gameSchema = {
 		align-items: flex-start;
 		justify-content: center;
 		background: rgba(18, 18, 18, 0.74);
+		overflow-y: auto;
+		overscroll-behavior: contain;
 		padding: 8% 1rem 1rem;
+		-webkit-overflow-scrolling: touch;
 	}
 
 	.kanter-overlay.is-visible {
@@ -368,6 +374,7 @@ const gameSchema = {
 
 	.kanter-difficulty button,
 	.kanter-rules button {
+		min-height: 2.75rem;
 		border: 1px solid rgba(248, 248, 250, 0.18);
 		border-radius: 999px;
 		background: rgba(248, 248, 250, 0.07);
@@ -471,6 +478,50 @@ const gameSchema = {
 		}
 	}
 
+	@media (max-width: 380px) {
+		.kanter-scorebar,
+		.kanter-meta {
+			gap: 0.35rem;
+		}
+
+		.kanter-scorebar > div,
+		.kanter-icon-button {
+			padding: 0.45rem;
+		}
+
+		.kanter-meta span {
+			font-size: 0.7rem;
+			padding: 0.4rem 0.45rem;
+		}
+
+		.kanter-overlay {
+			padding: 0.6rem;
+		}
+
+		.kanter-overlay-card {
+			padding: 0.8rem;
+		}
+
+		.kanter-overlay-card h2 {
+			font-size: 1.75rem;
+		}
+
+		.kanter-overlay-card p:not(.eyebrow):not(.wordmark) {
+			margin: 0.5rem auto 0.7rem;
+			font-size: 0.86rem;
+			line-height: 1.35;
+		}
+
+		.kanter-difficulty,
+		.kanter-rules {
+			margin-bottom: 0.65rem;
+		}
+
+		.kanter-rules button {
+			min-height: 3.5rem;
+		}
+	}
+
 	@media (prefers-reduced-motion: reduce) {
 		.kanter-toast,
 		.kanter-flash,
@@ -483,7 +534,8 @@ const gameSchema = {
 </style>
 
 <script>
-import { analyzeAim } from '../lib/kanter-ball/aim.js';
+import { analyzeAim, selectionRadius } from '../lib/kanter-ball/aim.js';
+import { commentaryPriority, shouldInterruptCommentary } from '../lib/kanter-ball/audio.js';
 import { cpuThinkDelay, planCpuTurn } from '../lib/kanter-ball/cpu.js';
 import {
 	isBallInKeeperDanger,
@@ -573,12 +625,12 @@ import {
 		time_low: {
 			lines: ['Time dey go oo!'],
 			clips: ['/audio/kanter-ball/clock-running-down.m4a'],
-			volume: 0.55,
+			volume: 0.82,
 		},
 		full_time: {
 			lines: ['Time up! Good game'],
 			clips: ['/audio/kanter-ball/match-ends.m4a'],
-			volume: 0.55,
+			volume: 0.82,
 		},
 	};
 	const AMBIENCE = {
@@ -620,6 +672,9 @@ import {
 			ambienceGain: null,
 			ambienceAudio: null,
 			commentaryAudio: null,
+			commentaryPriority: 0,
+			commentaryToken: 0,
+			pendingCommentary: null,
 			celebrationAudio: null,
 			lastCommentaryEvent: null,
 			lastCommentaryAt: 0,
@@ -656,15 +711,7 @@ import {
 	canvas.addEventListener('pointerdown', onPointerDown);
 	canvas.addEventListener('pointermove', onPointerMove);
 	canvas.addEventListener('pointerup', onPointerUp);
-	canvas.addEventListener('pointercancel', cancelDrag);
-	canvas.addEventListener('touchstart', onTouchStart, { passive: false });
-	canvas.addEventListener('touchmove', onTouchMove, { passive: false });
-	canvas.addEventListener('touchend', onTouchEnd, { passive: false });
-	canvas.addEventListener('touchcancel', cancelDrag);
-	canvas.addEventListener('mousedown', onMouseDown);
-	canvas.addEventListener('mousemove', onMouseMove);
-	canvas.addEventListener('mouseup', onMouseUp);
-	canvas.addEventListener('mouseleave', onMouseLeave);
+	canvas.addEventListener('pointercancel', onPointerCancel);
 
 	function makeBody({ type, side, role = 'outfield', x, y, r, mass, color, owner = false }) {
 		return {
@@ -770,7 +817,8 @@ import {
 			endCopy.textContent = `${state.playerScore}-${state.cpuScore} · ${rulesLabel()} · ${difficultyLabel()}. Best streak: ${state.records.bestStreak}.`;
 		}
 		endOverlay?.classList.add('is-visible');
-		playCommentary(reason === 'owner_collect' ? 'owner_collect' : 'full_time');
+		if (reason === 'owner_collect') playCommentary('owner_collect');
+		else queueCommentaryAfterCelebration('full_time');
 		track('game_end', currentResultData(reason));
 		updateHud();
 	}
@@ -844,7 +892,9 @@ import {
 	}
 
 	function onPointerDown(event) {
-		beginDrag(eventPoint(event));
+		if (!event.isPrimary || event.button !== 0) return;
+		if (event.cancelable) event.preventDefault();
+		if (!beginDrag(eventPoint(event))) return;
 		try {
 			canvas.setPointerCapture(event.pointerId);
 		} catch {
@@ -853,59 +903,31 @@ import {
 	}
 
 	function onPointerMove(event) {
-		if (!state.dragging) return;
+		if (!event.isPrimary || !state.dragging) return;
+		if (event.cancelable) event.preventDefault();
 		state.dragPoint = eventPoint(event);
 	}
 
 	function onPointerUp(event) {
-		if (!state.dragging) return;
+		if (!event.isPrimary || !state.dragging) return;
+		if (event.cancelable) event.preventDefault();
 		releaseDrag(eventPoint(event));
+		if (canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId);
 	}
 
-	function onTouchStart(event) {
-		const touch = event.changedTouches[0];
-		if (!touch) return;
-		event.preventDefault();
-		beginDrag(eventPoint(touch));
-	}
-
-	function onTouchMove(event) {
-		if (!state.dragging) return;
-		const touch = event.changedTouches[0];
-		if (!touch) return;
-		event.preventDefault();
-		state.dragPoint = eventPoint(touch);
-	}
-
-	function onTouchEnd(event) {
-		if (!state.dragging) return;
-		const touch = event.changedTouches[0];
-		if (!touch) return;
-		event.preventDefault();
-		releaseDrag(eventPoint(touch));
-	}
-
-	function onMouseDown(event) {
-		beginDrag(eventPoint(event));
-	}
-
-	function onMouseMove(event) {
-		if (!state.dragging) return;
-		state.dragPoint = eventPoint(event);
-	}
-
-	function onMouseUp(event) {
-		if (!state.dragging) return;
-		releaseDrag(eventPoint(event));
-	}
-
-	function onMouseLeave() {
+	function onPointerCancel(event) {
 		cancelDrag();
+		if (canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId);
 	}
 
 	function beginDrag(point) {
 		if (state.mode !== 'running' || state.turn !== 'player' || !isSettled()) return false;
-		const cap = playerCaps.find((item) => distance(point, item) <= item.r + 18);
+		const canvasWidth = canvas.getBoundingClientRect().width;
+		const cap = playerCaps.find(
+			(item) =>
+				distance(point, item) <=
+				selectionRadius({ bodyRadius: item.r, canvasCssWidth: canvasWidth, worldWidth: WORLD.width })
+		);
 		if (!cap) return false;
 		state.selectedCap = cap;
 		state.dragging = true;
@@ -1863,32 +1885,31 @@ import {
 		if (!item) return;
 		const now = performance.now();
 		if (state.audio.lastCommentaryEvent === eventName && now - state.audio.lastCommentaryAt < 1800) return;
-		state.audio.lastCommentaryEvent = eventName;
-		state.audio.lastCommentaryAt = now;
-		duckAmbience(item.clips.length ? 4.5 : 2.6);
-		const priority = [
-			'goal',
-			'own_goal_player',
-			'own_goal_cpu',
-			'owner_1',
-			'owner_2',
-			'owner_warn',
-			'owner_vex',
-			'owner_collect',
-			'time_low',
-			'full_time',
-		];
 		const recordedCommentaryPlaying = Boolean(
 			state.audio.commentaryAudio && !state.audio.commentaryAudio.paused && !state.audio.commentaryAudio.ended
 		);
-		if (priority.includes(eventName)) {
-			stopCommentary();
-		} else if (recordedCommentaryPlaying || ('speechSynthesis' in window && window.speechSynthesis.speaking)) {
+		const speechPlaying = Boolean('speechSynthesis' in window && window.speechSynthesis.speaking);
+		const isActive = recordedCommentaryPlaying || speechPlaying;
+		if (
+			!shouldInterruptCommentary({
+				nextEvent: eventName,
+				activePriority: state.audio.commentaryPriority,
+				isActive,
+			})
+		) {
 			return;
 		}
+		if (isActive) stopCommentary();
+		const token = state.audio.commentaryToken + 1;
+		state.audio.commentaryToken = token;
+		state.audio.commentaryPriority = commentaryPriority(eventName);
+		state.audio.lastCommentaryEvent = eventName;
+		state.audio.lastCommentaryAt = now;
+		duckAmbience(item.clips.length ? 4.5 : 2.6);
+		if (state.audio.celebrationAudio) state.audio.celebrationAudio.volume = 0.22;
 		if (item.clips.length) {
 			const audio = new Audio(randomFrom(item.clips));
-			audio.volume = item.volume ?? 0.9;
+			audio.volume = item.volume ?? 0.82;
 			state.audio.commentaryAudio = audio;
 			audio.addEventListener('loadedmetadata', () => duckAmbience(audio.duration + 0.45), { once: true });
 			let usedFallback = false;
@@ -1896,12 +1917,14 @@ import {
 				if (usedFallback) return;
 				usedFallback = true;
 				if (state.audio.commentaryAudio === audio) state.audio.commentaryAudio = null;
-				speakCommentaryLine(item);
+				speakCommentaryLine(item, token);
 			};
 			audio.addEventListener(
 				'ended',
 				() => {
-					if (state.audio.commentaryAudio === audio) state.audio.commentaryAudio = null;
+					if (state.audio.commentaryAudio !== audio) return;
+					state.audio.commentaryAudio = null;
+					if (state.audio.commentaryToken === token) state.audio.commentaryPriority = 0;
 				},
 				{ once: true }
 			);
@@ -1909,7 +1932,18 @@ import {
 			audio.play().catch(fallback);
 			return;
 		}
-		speakCommentaryLine(item);
+		speakCommentaryLine(item, token);
+	}
+
+	function queueCommentaryAfterCelebration(eventName) {
+		const celebrationPlaying = Boolean(
+			state.audio.celebrationAudio && !state.audio.celebrationAudio.paused && !state.audio.celebrationAudio.ended
+		);
+		if (!celebrationPlaying) {
+			playCommentary(eventName);
+			return;
+		}
+		state.audio.pendingCommentary = eventName;
 	}
 
 	function playGoalCelebration() {
@@ -1917,28 +1951,32 @@ import {
 		stopCelebration();
 		duckAmbience(4.6);
 		const audio = new Audio('/audio/kanter-ball/goal-celebration.m4a');
-		audio.volume = 0.68;
+		audio.volume = 0.9;
 		state.audio.celebrationAudio = audio;
-		audio.addEventListener(
-			'ended',
-			() => {
-				if (state.audio.celebrationAudio === audio) state.audio.celebrationAudio = null;
-			},
-			{ once: true }
-		);
-		audio.play().catch(() => {
-			if (state.audio.celebrationAudio === audio) state.audio.celebrationAudio = null;
-		});
+		audio.addEventListener('ended', () => finishCelebration(audio), { once: true });
+		audio.play().catch(() => finishCelebration(audio));
+	}
+
+	function finishCelebration(audio) {
+		if (state.audio.celebrationAudio !== audio) return;
+		state.audio.celebrationAudio = null;
+		const pending = state.audio.pendingCommentary;
+		state.audio.pendingCommentary = null;
+		if (pending) playCommentary(pending);
 	}
 
 	function stopCelebration() {
-		if (!state.audio.celebrationAudio) return;
-		state.audio.celebrationAudio.pause();
-		state.audio.celebrationAudio.currentTime = 0;
-		state.audio.celebrationAudio = null;
+		if (state.audio.celebrationAudio) {
+			state.audio.celebrationAudio.pause();
+			state.audio.celebrationAudio.currentTime = 0;
+			state.audio.celebrationAudio = null;
+		}
+		state.audio.pendingCommentary = null;
 	}
 
 	function stopCommentary() {
+		state.audio.commentaryToken += 1;
+		state.audio.commentaryPriority = 0;
 		if (state.audio.commentaryAudio) {
 			state.audio.commentaryAudio.pause();
 			state.audio.commentaryAudio.currentTime = 0;
@@ -1947,8 +1985,11 @@ import {
 		if ('speechSynthesis' in window) window.speechSynthesis.cancel();
 	}
 
-	function speakCommentaryLine(item) {
-		if (!('speechSynthesis' in window) || !item.lines.length) return;
+	function speakCommentaryLine(item, token) {
+		if (!('speechSynthesis' in window) || !item.lines.length) {
+			if (state.audio.commentaryToken === token) state.audio.commentaryPriority = 0;
+			return;
+		}
 		const utterance = new SpeechSynthesisUtterance(randomFrom(item.lines));
 		utterance.lang = 'en-NG';
 		const voices = window.speechSynthesis.getVoices();
@@ -1958,7 +1999,12 @@ import {
 			null;
 		utterance.rate = 1;
 		utterance.pitch = 1;
-		utterance.volume = 0.95;
+		utterance.volume = 0.88;
+		const finish = () => {
+			if (state.audio.commentaryToken === token) state.audio.commentaryPriority = 0;
+		};
+		utterance.addEventListener('end', finish, { once: true });
+		utterance.addEventListener('error', finish, { once: true });
 		window.speechSynthesis.speak(utterance);
 	}
 
