@@ -430,7 +430,9 @@ const gameSchema = {
 	}
 </style>
 
-<script is:inline>
+<script>
+import { planCpuTurn } from '../lib/kanter-ball/cpu.js';
+
 (() => {
 	const canvas = document.getElementById('kanter-canvas');
 	if (!(canvas instanceof HTMLCanvasElement)) return;
@@ -485,27 +487,12 @@ const gameSchema = {
 	const DIFFICULTIES = {
 		easy: {
 			label: 'Easy',
-			aimSpread: 0.46,
-			powerNoise: 0.34,
-			shootChance: 0.48,
-			defendChance: 0.14,
-			power: 0.68,
 		},
 		medium: {
 			label: 'Medium',
-			aimSpread: 0.22,
-			powerNoise: 0.18,
-			shootChance: 0.64,
-			defendChance: 0.3,
-			power: 0.82,
 		},
 		hard: {
 			label: 'Hard',
-			aimSpread: 0.08,
-			powerNoise: 0.08,
-			shootChance: 0.78,
-			defendChance: 0.48,
-			power: 0.94,
 		},
 	};
 	const COMMENTARY = {
@@ -889,28 +876,21 @@ const gameSchema = {
 	}
 
 	function cpuShoot() {
-		const profile = DIFFICULTIES[state.difficulty];
-		const owner = getOwner();
-		const candidates = cpuCaps.filter((cap) => cap !== owner || Math.random() > 0.25);
-		let cap = closestTo(candidates, ball);
-		let target = { x: ball.x, y: ball.y };
-
-		const cpuCanShoot = ball.y > PITCH.y + 160 && Math.random() < profile.shootChance;
-		const cpuShouldDefend =
-			ball.y > PITCH.y + PITCH.height * 0.56 && Math.random() < profile.defendChance;
-		if (cpuCanShoot) {
-			target = { x: 360 + randomBetween(-38, 38), y: PITCH.y + PITCH.height + GOAL.depth };
-			cap = closestTo(candidates, ball);
-		} else if (cpuShouldDefend) {
-			cap = closestTo(candidates, { x: ball.x, y: PITCH.y + 210 });
-			target = { x: clamp(ball.x, PITCH.x + 90, PITCH.x + PITCH.width - 90), y: PITCH.y + 275 };
-		}
-
-		const angle = Math.atan2(target.y - cap.y, target.x - cap.x) + randomBetween(-profile.aimSpread, profile.aimSpread);
-		const distanceToTarget = Math.min(PHYSICS.maxDrag, Math.max(48, distance(cap, target) * 0.34));
-		const power = distanceToTarget * profile.power * (1 + randomBetween(-profile.powerNoise, profile.powerNoise));
-		cap.vx = Math.cos(angle) * power * PHYSICS.cpuPowerScale;
-		cap.vy = Math.sin(angle) * power * PHYSICS.cpuPowerScale;
+		const plan = planCpuTurn({
+			ball,
+			cpuCaps,
+			playerCaps,
+			difficulty: state.difficulty,
+			pitch: PITCH,
+			goal: GOAL,
+			friction: PHYSICS.friction,
+			maxDrag: PHYSICS.maxDrag,
+			powerScale: PHYSICS.cpuPowerScale,
+		});
+		if (!plan) return;
+		const cap = plan.cap;
+		cap.vx = plan.velocity.x;
+		cap.vy = plan.velocity.y;
 		state.currentShot = {
 			side: 'cpu',
 			cap,
