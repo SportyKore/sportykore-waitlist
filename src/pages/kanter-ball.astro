@@ -562,11 +562,11 @@ import {
 		goal: { lines: ['Goooal!', 'Na goal be that!', 'Sweet finish!'], clips: [] },
 		near_miss: { lines: ['Ah! Close one', 'Bad luck'], clips: [] },
 		save: { lines: ['Keeper save am!', 'No entry!'], clips: [] },
-		owner_1: { lines: [OWNER_COMMENTARY.owner_1], clips: [] },
-		owner_2: { lines: [OWNER_COMMENTARY.owner_2], clips: [] },
-		owner_vex: { lines: [OWNER_COMMENTARY.owner_vex], clips: [] },
+		owner_1: { lines: [OWNER_COMMENTARY.owner_1], clips: ['/audio/kanter-ball/owner-alert.m4a'] },
+		owner_2: { lines: [OWNER_COMMENTARY.owner_2], clips: ['/audio/kanter-ball/owner-warning.m4a'] },
+		owner_vex: { lines: [OWNER_COMMENTARY.owner_vex], clips: ['/audio/kanter-ball/owner-vexed.m4a'] },
 		owner_warn: { lines: [OWNER_COMMENTARY.owner_warn], clips: [] },
-		owner_collect: { lines: [OWNER_COMMENTARY.owner_collect], clips: [] },
+		owner_collect: { lines: [OWNER_COMMENTARY.owner_collect], clips: ['/audio/kanter-ball/owner-collect.m4a'] },
 		time_low: { lines: ['Time dey go oo!'], clips: [] },
 		full_time: { lines: ['Time up! Good game'], clips: [] },
 	};
@@ -607,6 +607,7 @@ import {
 			ambience: null,
 			ambienceGain: null,
 			ambienceAudio: null,
+			commentaryAudio: null,
 			duckTimer: 0,
 		},
 	};
@@ -1275,7 +1276,6 @@ import {
 					cap.vy += away.y * 420;
 					state.currentShot.ownerWarned = true;
 					showToast('owner don warn you oo');
-					playCommentary('owner_warn');
 				}
 			}
 			if ((a === ball && b.role === 'keeper') || (b === ball && a.role === 'keeper')) {
@@ -1604,7 +1604,7 @@ import {
 		state.muted = !state.muted;
 		writeMuted(state.muted);
 		if (state.muted) {
-			if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+			stopCommentary();
 			setAmbienceVolume(0);
 		} else {
 			setAmbienceVolume(AMBIENCE.volume);
@@ -1692,7 +1692,7 @@ import {
 		if (state.muted || !state.audioReady) return;
 		const item = COMMENTARY[eventName];
 		if (!item) return;
-		duckAmbience();
+		duckAmbience(item.clips.length ? 4.5 : 2.6);
 		const priority = [
 			'goal',
 			'owner_1',
@@ -1702,17 +1702,49 @@ import {
 			'owner_collect',
 			'full_time',
 		];
-		if ('speechSynthesis' in window && priority.includes(eventName)) {
-			window.speechSynthesis.cancel();
-		} else if ('speechSynthesis' in window && window.speechSynthesis.speaking) {
+		const recordedCommentaryPlaying = Boolean(
+			state.audio.commentaryAudio && !state.audio.commentaryAudio.paused && !state.audio.commentaryAudio.ended
+		);
+		if (priority.includes(eventName)) {
+			stopCommentary();
+		} else if (recordedCommentaryPlaying || ('speechSynthesis' in window && window.speechSynthesis.speaking)) {
 			return;
 		}
 		if (item.clips.length) {
 			const audio = new Audio(randomFrom(item.clips));
 			audio.volume = 0.9;
-			audio.play().catch(() => {});
+			state.audio.commentaryAudio = audio;
+			let usedFallback = false;
+			const fallback = () => {
+				if (usedFallback) return;
+				usedFallback = true;
+				if (state.audio.commentaryAudio === audio) state.audio.commentaryAudio = null;
+				speakCommentaryLine(item);
+			};
+			audio.addEventListener(
+				'ended',
+				() => {
+					if (state.audio.commentaryAudio === audio) state.audio.commentaryAudio = null;
+				},
+				{ once: true }
+			);
+			audio.addEventListener('error', fallback, { once: true });
+			audio.play().catch(fallback);
 			return;
 		}
+		speakCommentaryLine(item);
+	}
+
+	function stopCommentary() {
+		if (state.audio.commentaryAudio) {
+			state.audio.commentaryAudio.pause();
+			state.audio.commentaryAudio.currentTime = 0;
+			state.audio.commentaryAudio = null;
+		}
+		if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+	}
+
+	function speakCommentaryLine(item) {
 		if (!('speechSynthesis' in window) || !item.lines.length) return;
 		const utterance = new SpeechSynthesisUtterance(randomFrom(item.lines));
 		utterance.lang = 'en-NG';

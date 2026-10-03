@@ -6,11 +6,11 @@ export const OWNER_LIMITS = {
 };
 
 export const OWNER_COMMENTARY = {
-	owner_1: 'Na him be the owner. No vex am.',
-	owner_2: 'Owner dey warn you. Owner go soon collect e ball o.',
+	owner_1: 'Na him be the owner. No vex am o.',
+	owner_2: 'Owner dey warn you. Baba go soon collect him ball o.',
 	owner_vex: 'Owner don dey vex o!',
 	owner_warn: 'Owner don warn you o!',
-	owner_collect: 'Owner don collect e ball!',
+	owner_collect: 'Baba don collect him ball. Shebi I tell you na.',
 };
 
 export function ownerReaction(hits) {

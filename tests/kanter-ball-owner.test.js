@@ -26,8 +26,8 @@ test('each owner stage selects the matching commentary cue', () => {
 });
 
 test('owner stages have spoken Nigerian Pidgin lines', () => {
-	assert.equal(OWNER_COMMENTARY.owner_1, 'Na him be the owner. No vex am.');
-	assert.equal(OWNER_COMMENTARY.owner_2, 'Owner dey warn you. Owner go soon collect e ball o.');
+	assert.equal(OWNER_COMMENTARY.owner_1, 'Na him be the owner. No vex am o.');
+	assert.equal(OWNER_COMMENTARY.owner_2, 'Owner dey warn you. Baba go soon collect him ball o.');
 	assert.equal(OWNER_COMMENTARY.owner_vex, 'Owner don dey vex o!');
-	assert.equal(OWNER_COMMENTARY.owner_collect, 'Owner don collect e ball!');
+	assert.equal(OWNER_COMMENTARY.owner_collect, 'Baba don collect him ball. Shebi I tell you na.');
 });
