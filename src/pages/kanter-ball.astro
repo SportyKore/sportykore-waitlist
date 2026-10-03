@@ -493,6 +493,7 @@ import {
 } from '../lib/kanter-ball/keeper.js';
 import { OWNER_COMMENTARY, ownerReaction, OWNER_LIMITS } from '../lib/kanter-ball/owner.js';
 import { advanceMatchClock, MATCH_PACING } from '../lib/kanter-ball/pacing.js';
+import { classifyGoal } from '../lib/kanter-ball/scoring.js';
 import {
 	detectBoundaryEvent,
 	goalKickKeeperPositions,
@@ -565,6 +566,8 @@ import {
 	const COMMENTARY = {
 		kickoff: { lines: ['Make we start!', 'Game don start oo'], clips: [] },
 		goal: { lines: ['Goooal!', 'Na goal be that!', 'Sweet finish!'], clips: [] },
+		own_goal_player: { lines: ['Own goal! Dem score themselves!'], clips: [] },
+		own_goal_cpu: { lines: ['Own goal! You put am for your own net!'], clips: [] },
 		near_miss: { lines: ['Ah! Close one', 'Bad luck'], clips: [] },
 		save: { lines: ['Keeper save am!', 'No entry!'], clips: [] },
 		owner_1: { lines: [OWNER_COMMENTARY.owner_1], clips: ['/audio/kanter-ball/owner-alert.m4a'] },
@@ -572,8 +575,17 @@ import {
 		owner_vex: { lines: [OWNER_COMMENTARY.owner_vex], clips: ['/audio/kanter-ball/owner-vexed.m4a'] },
 		owner_warn: { lines: [OWNER_COMMENTARY.owner_warn], clips: [] },
 		owner_collect: { lines: [OWNER_COMMENTARY.owner_collect], clips: ['/audio/kanter-ball/owner-collect.m4a'] },
-		time_low: { lines: ['Time dey go oo!'], clips: ['/audio/kanter-ball/clock-running-down.m4a'] },
-		full_time: { lines: ['Time up! Good game'], clips: ['/audio/kanter-ball/match-ends.m4a'] },
+		time_low: {
+			lines: ['Time dey go oo!'],
+			clips: ['/audio/kanter-ball/clock-running-down.m4a'],
+			volume: 0.55,
+		},
+		full_time: {
+			lines: ['Time up! Good game'],
+			clips: ['/audio/kanter-ball/match-ends.m4a'],
+			volume: 0.55,
+			clipEnd: 3.25,
+		},
 	};
 	const AMBIENCE = {
 		url: '',
@@ -613,6 +625,9 @@ import {
 			ambienceGain: null,
 			ambienceAudio: null,
 			commentaryAudio: null,
+			celebrationAudio: null,
+			lastCommentaryEvent: null,
+			lastCommentaryAt: 0,
 			duckTimer: 0,
 		},
 	};
@@ -1307,6 +1322,10 @@ import {
 	}
 
 	function scoreGoal(side) {
+		const goal = classifyGoal({
+			scoringSide: side,
+			lastTouch: state.lastTouch || state.currentShot?.side || null,
+		});
 		if (side === 'player') {
 			state.playerScore += 1;
 			state.ownerHits = 0;
@@ -1318,8 +1337,17 @@ import {
 		void flashEl?.offsetWidth;
 		flashEl?.classList.add('is-active');
 		spawnParticles(ball.x, ball.y, side === 'player' ? '#E6A817' : '#E5D3F4');
-		showToast(side === 'player' ? 'Goal for you!' : 'Computer scores.');
-		playCommentary('goal');
+		showToast(
+			goal.ownGoal
+				? side === 'player'
+					? 'Own goal! Goal for you.'
+					: 'Own goal! Computer scores.'
+				: side === 'player'
+					? 'Goal for you!'
+					: 'Computer scores.'
+		);
+		playGoalCelebration();
+		if (goal.ownGoal) playCommentary(side === 'player' ? 'own_goal_player' : 'own_goal_cpu');
 		updateHud();
 		if (state.playerScore >= GOAL_TARGET || state.cpuScore >= GOAL_TARGET) {
 			endGame('goal_target');
@@ -1668,6 +1696,7 @@ import {
 		writeMuted(state.muted);
 		if (state.muted) {
 			stopCommentary();
+			stopCelebration();
 			setAmbienceVolume(0);
 		} else {
 			setAmbienceVolume(AMBIENCE.volume);
@@ -1755,9 +1784,15 @@ import {
 		if (state.muted || !state.audioReady) return;
 		const item = COMMENTARY[eventName];
 		if (!item) return;
+		const now = performance.now();
+		if (state.audio.lastCommentaryEvent === eventName && now - state.audio.lastCommentaryAt < 1800) return;
+		state.audio.lastCommentaryEvent = eventName;
+		state.audio.lastCommentaryAt = now;
 		duckAmbience(item.clips.length ? 4.5 : 2.6);
 		const priority = [
 			'goal',
+			'own_goal_player',
+			'own_goal_cpu',
 			'owner_1',
 			'owner_2',
 			'owner_warn',
@@ -1776,8 +1811,15 @@ import {
 		}
 		if (item.clips.length) {
 			const audio = new Audio(randomFrom(item.clips));
-			audio.volume = 0.9;
+			audio.volume = item.volume ?? 0.9;
 			state.audio.commentaryAudio = audio;
+			if (item.clipEnd) {
+				audio.addEventListener('timeupdate', () => {
+					if (audio.currentTime < item.clipEnd) return;
+					audio.pause();
+					if (state.audio.commentaryAudio === audio) state.audio.commentaryAudio = null;
+				});
+			}
 			audio.addEventListener('loadedmetadata', () => duckAmbience(audio.duration + 0.45), { once: true });
 			let usedFallback = false;
 			const fallback = () => {
@@ -1798,6 +1840,32 @@ import {
 			return;
 		}
 		speakCommentaryLine(item);
+	}
+
+	function playGoalCelebration() {
+		if (state.muted || !state.audioReady) return;
+		stopCelebration();
+		duckAmbience(4.6);
+		const audio = new Audio('/audio/kanter-ball/goal-celebration.m4a');
+		audio.volume = 0.68;
+		state.audio.celebrationAudio = audio;
+		audio.addEventListener(
+			'ended',
+			() => {
+				if (state.audio.celebrationAudio === audio) state.audio.celebrationAudio = null;
+			},
+			{ once: true }
+		);
+		audio.play().catch(() => {
+			if (state.audio.celebrationAudio === audio) state.audio.celebrationAudio = null;
+		});
+	}
+
+	function stopCelebration() {
+		if (!state.audio.celebrationAudio) return;
+		state.audio.celebrationAudio.pause();
+		state.audio.celebrationAudio.currentTime = 0;
+		state.audio.celebrationAudio = null;
 	}
 
 	function stopCommentary() {
