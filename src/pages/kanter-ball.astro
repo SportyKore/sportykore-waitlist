@@ -567,8 +567,8 @@ import {
 		owner_vex: { lines: [OWNER_COMMENTARY.owner_vex], clips: ['/audio/kanter-ball/owner-vexed.m4a'] },
 		owner_warn: { lines: [OWNER_COMMENTARY.owner_warn], clips: [] },
 		owner_collect: { lines: [OWNER_COMMENTARY.owner_collect], clips: ['/audio/kanter-ball/owner-collect.m4a'] },
-		time_low: { lines: ['Time dey go oo!'], clips: [] },
-		full_time: { lines: ['Time up! Good game'], clips: [] },
+		time_low: { lines: ['Time dey go oo!'], clips: ['/audio/kanter-ball/clock-running-down.m4a'] },
+		full_time: { lines: ['Time up! Good game'], clips: ['/audio/kanter-ball/match-ends.m4a'] },
 	};
 	const AMBIENCE = {
 		url: '',
@@ -1700,6 +1700,7 @@ import {
 			'owner_warn',
 			'owner_vex',
 			'owner_collect',
+			'time_low',
 			'full_time',
 		];
 		const recordedCommentaryPlaying = Boolean(
@@ -1714,6 +1715,7 @@ import {
 			const audio = new Audio(randomFrom(item.clips));
 			audio.volume = 0.9;
 			state.audio.commentaryAudio = audio;
+			audio.addEventListener('loadedmetadata', () => duckAmbience(audio.duration + 0.45), { once: true });
 			let usedFallback = false;
 			const fallback = () => {
 				if (usedFallback) return;
