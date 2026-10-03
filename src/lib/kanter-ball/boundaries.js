@@ -53,6 +53,15 @@ export function insetPitch(pitch, inset) {
 	};
 }
 
+export function isBallEnteringGoal({ ball, pitch, goal, edge }) {
+	const goalLeft = pitch.x + pitch.width / 2 - goal.width / 2;
+	const goalRight = pitch.x + pitch.width / 2 + goal.width / 2;
+	if (ball.x <= goalLeft || ball.x >= goalRight) return false;
+	if (edge === 'top') return ball.y - ball.r < pitch.y;
+	if (edge === 'bottom') return ball.y + ball.r > pitch.y + pitch.height;
+	return false;
+}
+
 export function shouldRecordLastTouch(relativeNormalSpeed) {
 	return Number.isFinite(relativeNormalSpeed) && relativeNormalSpeed < -1;
 }

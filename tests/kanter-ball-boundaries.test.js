@@ -4,6 +4,7 @@ import test from 'node:test';
 import {
 	detectBoundaryEvent,
 	insetPitch,
+	isBallEnteringGoal,
 	restartPlacement,
 	shouldRecordLastTouch,
 } from '../src/lib/kanter-ball/boundaries.js';
@@ -32,6 +33,28 @@ test('visible white pitch markings define out of play instead of the outer board
 	assert.equal(visibleField.x, 76);
 	assert.equal(result.type, 'throw_in');
 	assert.equal(result.awardedTo, 'cpu');
+});
+
+test('ball passes through the goal mouth from the first moment it crosses the goal line', () => {
+	const visibleField = insetPitch(pitch, 28);
+	assert.equal(
+		isBallEnteringGoal({
+			ball: { x: 360, y: visibleField.y + 13, r: 14 },
+			pitch: visibleField,
+			goal,
+			edge: 'top',
+		}),
+		true
+	);
+	assert.equal(
+		isBallEnteringGoal({
+			ball: { x: 200, y: visibleField.y + 13, r: 14 },
+			pitch: visibleField,
+			goal,
+			edge: 'top',
+		}),
+		false
+	);
 });
 
 test('active shooter is the fallback when collision attribution is temporarily unavailable', () => {

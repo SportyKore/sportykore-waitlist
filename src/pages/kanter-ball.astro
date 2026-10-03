@@ -488,6 +488,7 @@ import { planCpuTurn } from '../lib/kanter-ball/cpu.js';
 import {
 	detectBoundaryEvent,
 	insetPitch,
+	isBallEnteringGoal,
 	restartPlacement,
 	shouldRecordLastTouch,
 } from '../lib/kanter-ball/boundaries.js';
@@ -1129,9 +1130,10 @@ import {
 	}
 
 	function collideWalls(body) {
-		const inTopGoal = body.type === 'ball' && body.x > goalLeft() && body.x < goalRight() && body.y < FIELD.y + 12;
+		const inTopGoal =
+			body.type === 'ball' && isBallEnteringGoal({ ball: body, pitch: FIELD, goal: GOAL, edge: 'top' });
 		const inBottomGoal =
-			body.type === 'ball' && body.x > goalLeft() && body.x < goalRight() && body.y > FIELD.y + FIELD.height - 12;
+			body.type === 'ball' && isBallEnteringGoal({ ball: body, pitch: FIELD, goal: GOAL, edge: 'bottom' });
 		if (body.x - body.r < FIELD.x) {
 			body.x = FIELD.x + body.r;
 			body.vx = Math.abs(body.vx) * PHYSICS.wallRestitution;
