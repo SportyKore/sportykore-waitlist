@@ -487,6 +487,7 @@ const gameSchema = {
 import { planCpuTurn } from '../lib/kanter-ball/cpu.js';
 import {
 	detectBoundaryEvent,
+	insetPitch,
 	restartPlacement,
 	shouldRecordLastTouch,
 } from '../lib/kanter-ball/boundaries.js';
@@ -528,6 +529,8 @@ import {
 	const GOAL_TARGET = 3;
 	const WORLD = { width: 720, height: 980 };
 	const PITCH = { x: 48, y: 58, width: 624, height: 864 };
+	const FIELD_INSET = 28;
+	const FIELD = insetPitch(PITCH, FIELD_INSET);
 	const GOAL = { width: 186, depth: 34 };
 	const OWNER_LIMITS = {
 		calmMax: 2,
@@ -971,7 +974,7 @@ import {
 			cpuCaps,
 			playerCaps,
 			difficulty: state.difficulty,
-			pitch: PITCH,
+			pitch: FIELD,
 			goal: GOAL,
 			friction: PHYSICS.friction,
 			maxDrag: PHYSICS.maxDrag,
@@ -1052,7 +1055,7 @@ import {
 			const boundaryEvent = detectBoundaryEvent({
 				previous: previousBall,
 				ball,
-				pitch: PITCH,
+				pitch: FIELD,
 				goal: GOAL,
 				lastTouch: state.lastTouch,
 				fallbackTouch: state.currentShot?.side,
@@ -1078,7 +1081,7 @@ import {
 			body.vy = 0;
 		}
 		const teamCaps = event.awardedTo === 'player' ? playerCaps : cpuCaps;
-		const placement = restartPlacement({ event, pitch: PITCH, ballRadius: ball.r });
+		const placement = restartPlacement({ event, pitch: FIELD, ballRadius: ball.r });
 		const eligible =
 			placement.role === 'keeper'
 				? teamCaps.filter((cap) => cap.role === 'keeper')
@@ -1116,23 +1119,23 @@ import {
 	}
 
 	function collideWalls(body) {
-		const inTopGoal = body.type === 'ball' && body.x > goalLeft() && body.x < goalRight() && body.y < PITCH.y + 12;
+		const inTopGoal = body.type === 'ball' && body.x > goalLeft() && body.x < goalRight() && body.y < FIELD.y + 12;
 		const inBottomGoal =
-			body.type === 'ball' && body.x > goalLeft() && body.x < goalRight() && body.y > PITCH.y + PITCH.height - 12;
-		if (body.x - body.r < PITCH.x) {
-			body.x = PITCH.x + body.r;
+			body.type === 'ball' && body.x > goalLeft() && body.x < goalRight() && body.y > FIELD.y + FIELD.height - 12;
+		if (body.x - body.r < FIELD.x) {
+			body.x = FIELD.x + body.r;
 			body.vx = Math.abs(body.vx) * PHYSICS.wallRestitution;
 		}
-		if (body.x + body.r > PITCH.x + PITCH.width) {
-			body.x = PITCH.x + PITCH.width - body.r;
+		if (body.x + body.r > FIELD.x + FIELD.width) {
+			body.x = FIELD.x + FIELD.width - body.r;
 			body.vx = -Math.abs(body.vx) * PHYSICS.wallRestitution;
 		}
-		if (!inTopGoal && body.y - body.r < PITCH.y) {
-			body.y = PITCH.y + body.r;
+		if (!inTopGoal && body.y - body.r < FIELD.y) {
+			body.y = FIELD.y + body.r;
 			body.vy = Math.abs(body.vy) * PHYSICS.wallRestitution;
 		}
-		if (!inBottomGoal && body.y + body.r > PITCH.y + PITCH.height) {
-			body.y = PITCH.y + PITCH.height - body.r;
+		if (!inBottomGoal && body.y + body.r > FIELD.y + FIELD.height) {
+			body.y = FIELD.y + FIELD.height - body.r;
 			body.vy = -Math.abs(body.vy) * PHYSICS.wallRestitution;
 		}
 	}
@@ -1197,10 +1200,10 @@ import {
 		if (state.goalCooldown > 0 || state.mode !== 'running') return;
 		const left = goalLeft();
 		const right = goalRight();
-		if (ball.x > left && ball.x < right && ball.y + ball.r < PITCH.y) {
+		if (ball.x > left && ball.x < right && ball.y + ball.r < FIELD.y) {
 			scoreGoal('player');
 		}
-		if (ball.x > left && ball.x < right && ball.y - ball.r > PITCH.y + PITCH.height) {
+		if (ball.x > left && ball.x < right && ball.y - ball.r > FIELD.y + FIELD.height) {
 			scoreGoal('cpu');
 		}
 	}
@@ -1290,11 +1293,11 @@ import {
 
 		ctx.strokeStyle = 'rgba(248,248,250,0.42)';
 		ctx.lineWidth = 3;
-		roundRect(PITCH.x + 28, PITCH.y + 28, PITCH.width - 56, PITCH.height - 56, 18);
+		roundRect(FIELD.x, FIELD.y, FIELD.width, FIELD.height, 18);
 		ctx.stroke();
 		ctx.beginPath();
-		ctx.moveTo(PITCH.x + 28, PITCH.y + PITCH.height / 2);
-		ctx.lineTo(PITCH.x + PITCH.width - 28, PITCH.y + PITCH.height / 2);
+		ctx.moveTo(FIELD.x, PITCH.y + PITCH.height / 2);
+		ctx.lineTo(FIELD.x + FIELD.width, PITCH.y + PITCH.height / 2);
 		ctx.stroke();
 		ctx.beginPath();
 		ctx.arc(360, PITCH.y + PITCH.height / 2, 82, 0, Math.PI * 2);
@@ -1327,8 +1330,8 @@ import {
 	function drawGoals() {
 		ctx.strokeStyle = 'rgba(248,248,250,0.58)';
 		ctx.lineWidth = 5;
-		ctx.strokeRect(goalLeft(), PITCH.y - GOAL.depth, GOAL.width, GOAL.depth);
-		ctx.strokeRect(goalLeft(), PITCH.y + PITCH.height, GOAL.width, GOAL.depth);
+		ctx.strokeRect(goalLeft(), FIELD.y - GOAL.depth, GOAL.width, GOAL.depth);
+		ctx.strokeRect(goalLeft(), FIELD.y + FIELD.height, GOAL.width, GOAL.depth);
 	}
 
 	function drawCap(cap) {

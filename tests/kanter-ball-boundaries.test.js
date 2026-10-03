@@ -3,6 +3,7 @@ import test from 'node:test';
 
 import {
 	detectBoundaryEvent,
+	insetPitch,
 	restartPlacement,
 	shouldRecordLastTouch,
 } from '../src/lib/kanter-ball/boundaries.js';
@@ -16,6 +17,20 @@ test('touchline exit awards a throw-in to the other team', () => {
 	const result = event({ x: 70, y: 500 }, { x: 30, y: 510 }, 'player');
 	assert.equal(result.type, 'throw_in');
 	assert.equal(result.edge, 'left');
+	assert.equal(result.awardedTo, 'cpu');
+});
+
+test('visible white pitch markings define out of play instead of the outer board', () => {
+	const visibleField = insetPitch(pitch, 28);
+	const result = detectBoundaryEvent({
+		previous: { x: 70, y: 500 },
+		ball: { x: 60, y: 500, r: 14 },
+		pitch: visibleField,
+		goal,
+		lastTouch: 'player',
+	});
+	assert.equal(visibleField.x, 76);
+	assert.equal(result.type, 'throw_in');
 	assert.equal(result.awardedTo, 'cpu');
 });
 

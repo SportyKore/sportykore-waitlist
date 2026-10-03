@@ -44,6 +44,15 @@ export function detectBoundaryEvent({ previous, ball, pitch, goal, lastTouch, fa
 	};
 }
 
+export function insetPitch(pitch, inset) {
+	return {
+		x: pitch.x + inset,
+		y: pitch.y + inset,
+		width: pitch.width - inset * 2,
+		height: pitch.height - inset * 2,
+	};
+}
+
 export function shouldRecordLastTouch(relativeNormalSpeed) {
 	return Number.isFinite(relativeNormalSpeed) && relativeNormalSpeed < -1;
 }
