@@ -484,6 +484,7 @@ const gameSchema = {
 </style>
 
 <script>
+import { analyzeAim } from '../lib/kanter-ball/aim.js';
 import { planCpuTurn } from '../lib/kanter-ball/cpu.js';
 import {
 	isBallInKeeperDanger,
@@ -898,13 +899,7 @@ import {
 		const drag = clampVector({ x: cap.x - point.x, y: cap.y - point.y }, PHYSICS.maxDrag);
 		cancelDrag();
 		if (Math.hypot(drag.x, drag.y) < 10) return;
-		if (
-			state.rulesMode === 'football' &&
-			cap.role === 'keeper' &&
-			cap !== state.restartTaker &&
-			!isBallInKeeperDanger({ side: 'player', ball, pitch: FIELD }) &&
-			!isKeeperRecoveryFlick({ keeper: cap, movement: drag, side: 'player', pitch: FIELD, ballRadius: ball.r })
-		) {
+		if (isInvalidKeeperFlick(cap, drag)) {
 			showToast('Keeper can only move back toward goal while the ball is safe.');
 			return;
 		}
@@ -923,6 +918,16 @@ import {
 		state.settleTimer = 0;
 		showToast('Shot away.');
 		updateHud();
+	}
+
+	function isInvalidKeeperFlick(cap, drag) {
+		return (
+			state.rulesMode === 'football' &&
+			cap.role === 'keeper' &&
+			cap !== state.restartTaker &&
+			!isBallInKeeperDanger({ side: 'player', ball, pitch: FIELD }) &&
+			!isKeeperRecoveryFlick({ keeper: cap, movement: drag, side: 'player', pitch: FIELD, ballRadius: ball.r })
+		);
 	}
 
 	function cancelDrag() {
@@ -1453,6 +1458,13 @@ import {
 		ctx.strokeStyle = cap.side === 'player' ? 'rgba(248,248,250,0.74)' : 'rgba(229,211,244,0.74)';
 		ctx.stroke();
 		ctx.shadowBlur = 0;
+		if (selected) {
+			ctx.beginPath();
+			ctx.arc(cap.x, cap.y, cap.r + 9, 0, Math.PI * 2);
+			ctx.lineWidth = 4;
+			ctx.strokeStyle = '#FBE9B8';
+			ctx.stroke();
+		}
 		ctx.fillStyle = cap.owner ? '#171717' : '#F8F8FA';
 		ctx.font = '800 20px Open Sans, sans-serif';
 		ctx.textAlign = 'center';
@@ -1479,22 +1491,68 @@ import {
 		if (!state.dragging || !state.selectedCap || !state.dragPoint) return;
 		const cap = state.selectedCap;
 		const drag = clampVector({ x: cap.x - state.dragPoint.x, y: cap.y - state.dragPoint.y }, PHYSICS.maxDrag);
-		const power = Math.min(1, Math.hypot(drag.x, drag.y) / PHYSICS.maxDrag);
+		const aim = analyzeAim({ cap, drag, ball, obstacles: bodies, maxDrag: PHYSICS.maxDrag });
+		if (aim.status === 'idle') return;
+		const invalidKeeper = isInvalidKeeperFlick(cap, drag);
+		const blocked = aim.status === 'blocked';
+		const color = invalidKeeper || blocked ? '#FF6B64' : aim.willContactBall ? '#F2A900' : '#FBE9B8';
+		const statusLabel = invalidKeeper
+			? 'KEEPER: RECOVER ONLY'
+			: aim.willContactBall
+				? 'BALL CONTACT'
+				: blocked
+					? 'PLAYER BLOCKING'
+					: 'OPEN FLICK';
+		const startX = cap.x + aim.direction.x * (cap.r + 12);
+		const startY = cap.y + aim.direction.y * (cap.r + 12);
 		ctx.save();
-		ctx.strokeStyle = '#FBE9B8';
-		ctx.lineWidth = 5;
+		ctx.strokeStyle = color;
+		ctx.lineWidth = 6;
 		ctx.lineCap = 'round';
-		ctx.setLineDash([12, 10]);
+		ctx.setLineDash(invalidKeeper || blocked ? [8, 9] : [15, 10]);
 		ctx.beginPath();
-		ctx.moveTo(cap.x, cap.y);
-		ctx.lineTo(cap.x + drag.x * 1.35, cap.y + drag.y * 1.35);
+		ctx.moveTo(startX, startY);
+		ctx.lineTo(aim.guideEnd.x, aim.guideEnd.y);
 		ctx.stroke();
 		ctx.setLineDash([]);
-		ctx.fillStyle = 'rgba(18,18,18,0.8)';
-		roundRect(cap.x - 50, cap.y + cap.r + 16, 100, 14, 999);
+
+		const arrowAngle = Math.atan2(aim.direction.y, aim.direction.x);
+		ctx.fillStyle = color;
+		ctx.beginPath();
+		ctx.moveTo(aim.guideEnd.x, aim.guideEnd.y);
+		ctx.lineTo(aim.guideEnd.x - Math.cos(arrowAngle - 0.55) * 18, aim.guideEnd.y - Math.sin(arrowAngle - 0.55) * 18);
+		ctx.lineTo(aim.guideEnd.x - Math.cos(arrowAngle + 0.55) * 18, aim.guideEnd.y - Math.sin(arrowAngle + 0.55) * 18);
+		ctx.closePath();
 		ctx.fill();
-		ctx.fillStyle = '#F2A900';
-		roundRect(cap.x - 48, cap.y + cap.r + 18, 96 * power, 10, 999);
+
+		if (aim.contactPoint) {
+			ctx.beginPath();
+			ctx.arc(aim.contactPoint.x, aim.contactPoint.y, 9, 0, Math.PI * 2);
+			ctx.fillStyle = color;
+			ctx.fill();
+			ctx.beginPath();
+			ctx.arc(aim.firstCollision.target.x, aim.firstCollision.target.y, aim.firstCollision.target.r + 8, 0, Math.PI * 2);
+			ctx.lineWidth = 4;
+			ctx.strokeStyle = color;
+			ctx.stroke();
+		}
+
+		const panelWidth = 220;
+		const panelX = Math.max(PITCH.x + 8, Math.min(PITCH.x + PITCH.width - panelWidth - 8, cap.x - panelWidth / 2));
+		const panelY = cap.y > PITCH.y + PITCH.height * 0.72 ? cap.y - cap.r - 82 : cap.y + cap.r + 20;
+		ctx.fillStyle = 'rgba(18,18,18,0.9)';
+		roundRect(panelX, panelY, panelWidth, 60, 14);
+		ctx.fill();
+		ctx.fillStyle = color;
+		ctx.font = '800 16px Open Sans, sans-serif';
+		ctx.textAlign = 'center';
+		ctx.textBaseline = 'middle';
+		ctx.fillText(`${statusLabel} · ${Math.round(aim.power * 100)}%`, panelX + panelWidth / 2, panelY + 19);
+		ctx.fillStyle = 'rgba(248,248,250,0.16)';
+		roundRect(panelX + 14, panelY + 40, panelWidth - 28, 9, 999);
+		ctx.fill();
+		ctx.fillStyle = color;
+		roundRect(panelX + 14, panelY + 40, (panelWidth - 28) * aim.power, 9, 999);
 		ctx.fill();
 		ctx.restore();
 	}
