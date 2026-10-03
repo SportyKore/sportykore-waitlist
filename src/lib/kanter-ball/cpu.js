@@ -5,33 +5,50 @@ const DEFAULT_GOAL = { width: 186, depth: 34 };
 
 export const CPU_DIFFICULTIES = {
 	easy: {
-		choicePool: 3,
-		targetError: 52,
-		powerError: 0.14,
-		strength: 0.72,
-		impactSpeed: 280,
-		alignmentWeight: 90,
-		defensiveDepth: 0.2,
+		choicePool: 4,
+		targetError: 72,
+		powerError: 0.22,
+		strength: 0.68,
+		impactSpeed: 240,
+		alignmentWeight: 70,
+		defensiveDepth: 0.17,
+		keeperEmergencyDepth: 0.13,
+		goalTargetWidth: 0.72,
+		laneWeight: 0.65,
+		thinkDelayFactor: 1.35,
 	},
 	medium: {
 		choicePool: 2,
-		targetError: 18,
-		powerError: 0.055,
-		strength: 0.9,
-		impactSpeed: 405,
-		alignmentWeight: 210,
-		defensiveDepth: 0.32,
+		targetError: 28,
+		powerError: 0.09,
+		strength: 0.88,
+		impactSpeed: 380,
+		alignmentWeight: 190,
+		defensiveDepth: 0.31,
+		keeperEmergencyDepth: 0.17,
+		goalTargetWidth: 0.48,
+		laneWeight: 1.35,
+		thinkDelayFactor: 1,
 	},
 	hard: {
 		choicePool: 1,
-		targetError: 2,
-		powerError: 0.008,
+		targetError: 4,
+		powerError: 0.02,
 		strength: 1.08,
 		impactSpeed: 540,
-		alignmentWeight: 390,
-		defensiveDepth: 0.42,
+		alignmentWeight: 420,
+		defensiveDepth: 0.44,
+		keeperEmergencyDepth: 0.22,
+		goalTargetWidth: 0.39,
+		laneWeight: 2.2,
+		thinkDelayFactor: 0.65,
 	},
 };
+
+export function cpuThinkDelay(baseDelay, difficulty = 'medium') {
+	const profile = CPU_DIFFICULTIES[difficulty] || CPU_DIFFICULTIES.medium;
+	return Math.max(0, baseDelay) * profile.thinkDelayFactor;
+}
 
 /**
  * Plan one CPU flick. The CPU chooses where the ball should travel, works
@@ -59,7 +76,12 @@ export function planCpuTurn({
 		pitch,
 		depth: profile.defensiveDepth,
 	});
-	const keeperEmergency = isBallInKeeperDanger({ side: 'cpu', ball, pitch, depth: 0.17 });
+	const keeperEmergency = isBallInKeeperDanger({
+		side: 'cpu',
+		ball,
+		pitch,
+		depth: profile.keeperEmergencyDepth,
+	});
 	const intent = defensiveDanger ? 'clear' : 'attack';
 	const goalCenter = pitch.x + pitch.width / 2;
 	const laneOffset = goal.width * 0.27;
@@ -114,7 +136,7 @@ export function planCpuTurn({
 				keeperPenalty +
 				ownerAdjustment +
 				(blockedApproach ? 900 + Math.abs(approachClearance) * 8 : 0) -
-				Math.min(laneClearance, 80) * 1.35;
+				Math.min(laneClearance, 80) * profile.laneWeight;
 
 			plans.push({
 				cap,
@@ -155,7 +177,10 @@ export function planCpuTurn({
 	const aimOffset = signedRandom(random) * profile.targetError;
 	const targetBounds = defensiveDanger
 		? { left: pitch.x + pitch.width * 0.1, right: pitch.x + pitch.width * 0.9 }
-		: { left: goalCenter - goal.width * 0.42, right: goalCenter + goal.width * 0.42 };
+		: {
+				left: goalCenter - goal.width * profile.goalTargetWidth,
+				right: goalCenter + goal.width * profile.goalTargetWidth,
+			};
 	const target = {
 		...chosen.target,
 		x: clamp(chosen.target.x + aimOffset, targetBounds.left, targetBounds.right),
@@ -188,6 +213,7 @@ export function planCpuTurn({
 		velocity: { x: Math.cos(idealAngle) * speed, y: Math.sin(idealAngle) * speed },
 		target,
 		contactPoint,
+		ballDirection,
 		aimOffset,
 		alignmentError: chosen.alignmentError,
 		intent,

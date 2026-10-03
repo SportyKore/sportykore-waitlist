@@ -1,7 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { distancePointToSegment, planCpuTurn } from '../src/lib/kanter-ball/cpu.js';
+import {
+	cpuThinkDelay,
+	distancePointToSegment,
+	planCpuTurn,
+} from '../src/lib/kanter-ball/cpu.js';
 
 const PITCH = { x: 48, y: 58, width: 624, height: 864 };
 const GOAL = { width: 186, depth: 34 };
@@ -72,6 +76,26 @@ test('difficulty reduces target error while preserving a valid ball contact', ()
 	}
 });
 
+test('difficulty creates clearly separated thinking pace', () => {
+	const baseDelay = 0.32;
+	assert.ok(cpuThinkDelay(baseDelay, 'easy') > cpuThinkDelay(baseDelay, 'medium'));
+	assert.ok(cpuThinkDelay(baseDelay, 'medium') > cpuThinkDelay(baseDelay, 'hard'));
+});
+
+test('planned ball direction points at the selected target', () => {
+	const position = openingPosition();
+	const result = plan('hard', () => 0.5, position);
+	const toTarget = {
+		x: result.target.x - position.ball.x,
+		y: result.target.y - position.ball.y,
+	};
+	const targetLength = Math.hypot(toTarget.x, toTarget.y);
+	const alignment =
+		result.ballDirection.x * (toTarget.x / targetLength) +
+		result.ballDirection.y * (toTarget.y / targetLength);
+	assert.ok(alignment > 0.9999);
+});
+
 test('hard CPU clears downfield when the ball threatens its defensive third', () => {
 	const position = openingPosition();
 	position.ball = body(280, 210, { r: 14 });
@@ -91,14 +115,39 @@ test('hard recognizes danger earlier than easy', () => {
 	assert.equal(plan('hard', () => 0.5, position).intent, 'clear');
 });
 
-test('CPU keeper only engages inside the emergency area', () => {
+test('hard keeper engages earlier while easier keepers stay home', () => {
 	const position = openingPosition();
 	position.ball = body(360, 230, { r: 14 });
 	position.cpuCaps = [position.cpuCaps[0]];
-	assert.equal(plan('hard', () => 0.5, position), null);
+	assert.equal(plan('easy', () => 0.5, position), null);
+	assert.equal(plan('medium', () => 0.5, position), null);
+	assert.equal(plan('hard', () => 0.5, position)?.cap.role, 'keeper');
 
 	position.ball = body(360, 160, { r: 14 });
 	assert.equal(plan('hard', () => 0.5, position)?.cap.role, 'keeper');
+});
+
+test('easy produces visible misses while medium and hard keep goal targets tighter', () => {
+	const goalLeft = PITCH.x + (PITCH.width - GOAL.width) / 2;
+	const goalRight = goalLeft + GOAL.width;
+	const misses = {};
+
+	for (const difficulty of ['easy', 'medium', 'hard']) {
+		let seed = 7;
+		const random = () => {
+			seed = (seed * 48271) % 2147483647;
+			return seed / 2147483647;
+		};
+		misses[difficulty] = 0;
+		for (let index = 0; index < 360; index += 1) {
+			const result = plan(difficulty, random);
+			if (result.target.x < goalLeft || result.target.x > goalRight) misses[difficulty] += 1;
+		}
+	}
+
+	assert.ok(misses.easy >= 40, `easy only produced ${misses.easy} deliberately wide targets`);
+	assert.equal(misses.medium, 0);
+	assert.equal(misses.hard, 0);
 });
 
 test('CPU covers the shooting lane when every route to the ball is blocked', () => {

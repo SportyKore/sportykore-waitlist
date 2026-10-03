@@ -484,7 +484,7 @@ const gameSchema = {
 
 <script>
 import { analyzeAim } from '../lib/kanter-ball/aim.js';
-import { planCpuTurn } from '../lib/kanter-ball/cpu.js';
+import { cpuThinkDelay, planCpuTurn } from '../lib/kanter-ball/cpu.js';
 import {
 	isBallInKeeperDanger,
 	isKeeperRecoveryFlick,
@@ -1018,7 +1018,7 @@ import {
 	function updateCpu(dt) {
 		if (state.turn !== 'cpu' || !isSettled()) return;
 		state.cpuThinkTimer += dt;
-		if (state.cpuThinkTimer < currentMode().pacing.cpuThinkDelay) return;
+		if (state.cpuThinkTimer < cpuThinkDelay(currentMode().pacing.cpuThinkDelay, state.difficulty)) return;
 		state.cpuThinkTimer = 0;
 		cpuShoot();
 	}
@@ -1056,10 +1056,10 @@ import {
 		const cap = plan.cap;
 		cap.vx = plan.velocity.x;
 		cap.vy = plan.velocity.y;
-		beginCpuShot(cap);
+		beginCpuShot(cap, plan.ballDirection);
 	}
 
-	function beginCpuShot(cap) {
+	function beginCpuShot(cap, predictedBallDirection = null) {
 		state.currentShot = {
 			side: 'cpu',
 			cap,
@@ -1067,7 +1067,7 @@ import {
 			touchedOwner: false,
 			scored: false,
 			ownerWarned: false,
-			predictedBallDirection: null,
+			predictedBallDirection,
 		};
 		state.turn = 'settling';
 		state.settleTimer = 0;
