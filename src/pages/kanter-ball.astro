@@ -35,13 +35,12 @@ const gameSchema = {
 					<p class="eyebrow text-gold-soft">Sunday street-game test</p>
 					<h1 class="display-1 text-balance">Sportykore Kanter Ball</h1>
 					<p class="max-w-xl text-[1.0625rem] leading-relaxed text-white/76">
-						Pick a difficulty, flick your 7 caps, and beat the computer before the
-						owner of the ball collects it.
+						Choose a tactical football match or a fast street game, then flick your 7 caps and beat the computer.
 					</p>
 					<div class="flex flex-wrap gap-3 text-sm font-bold text-white/76">
 						<span class="kanter-pill">7v7 turns</span>
-						<span class="kanter-pill">90 active seconds</span>
-						<span class="kanter-pill">First to 3</span>
+						<span class="kanter-pill" data-match-length>90 active seconds</span>
+						<span class="kanter-pill" data-goal-target>First to 3</span>
 					</div>
 				</div>
 
@@ -103,9 +102,10 @@ const gameSchema = {
 									</button>
 									<button type="button" data-rules="street">
 										<span>Street</span>
-										<small>Walls rebound the ball</small>
+										<small>Fast rebounds and owner drama</small>
 									</button>
 								</div>
+								<p data-mode-summary>Tactical play with throw-ins, corners, goal kicks and proper restarts.</p>
 								<div class="kanter-option-label">Difficulty</div>
 								<div class="kanter-difficulty" role="group" aria-label="Choose difficulty">
 									<button type="button" data-difficulty="easy">Easy</button>
@@ -138,9 +138,8 @@ const gameSchema = {
 						</div>
 					</div>
 
-					<p class="kanter-help">
-						Owner hits count only when your flick hits the gold owner cap without
-						touching the ball or scoring.
+					<p class="kanter-help" data-mode-help>
+						Football rules use throw-ins, corners, goal kicks and full-ball-over-the-line scoring.
 					</p>
 				</section>
 			</div>
@@ -491,8 +490,9 @@ import {
 	isKeeperRecoveryFlick,
 	nextKeeperRecoveryPosition,
 } from '../lib/kanter-ball/keeper.js';
+import { modeProfile } from '../lib/kanter-ball/modes.js';
 import { OWNER_COMMENTARY, ownerReaction, OWNER_LIMITS } from '../lib/kanter-ball/owner.js';
-import { advanceMatchClock, MATCH_PACING } from '../lib/kanter-ball/pacing.js';
+import { advanceMatchClock } from '../lib/kanter-ball/pacing.js';
 import { classifyGoal } from '../lib/kanter-ball/scoring.js';
 import {
 	detectBoundaryEvent,
@@ -534,25 +534,18 @@ import {
 	const followLink = document.querySelector('[data-follow-x]');
 	const difficultyButtons = Array.from(document.querySelectorAll('[data-difficulty]'));
 	const rulesButtons = Array.from(document.querySelectorAll('[data-rules]'));
+	const modeSummaryEl = document.querySelector('[data-mode-summary]');
+	const modeHelpEl = document.querySelector('[data-mode-help]');
+	const matchLengthEl = document.querySelector('[data-match-length]');
+	const goalTargetEl = document.querySelector('[data-goal-target]');
 
 	const MUTE_KEY = 'sportykore:kanter-ball:mute';
 	const RECORDS_KEY = 'sportykore:kanter-ball:records';
-	const MATCH_SECONDS = 90;
-	const GOAL_TARGET = 3;
 	const WORLD = { width: 720, height: 980 };
 	const PITCH = { x: 48, y: 58, width: 624, height: 864 };
 	const FIELD_INSET = 28;
 	const FIELD = insetPitch(PITCH, FIELD_INSET);
 	const GOAL = { width: 186, depth: 34 };
-	const PHYSICS = {
-		friction: 410,
-		maxDrag: 125,
-		powerScale: 7.6,
-		cpuPowerScale: 6.6,
-		restitution: 0.72,
-		wallRestitution: 0.56,
-		restSpeed: 10,
-	};
 	const DIFFICULTIES = {
 		easy: {
 			label: 'Easy',
@@ -600,7 +593,7 @@ import {
 		turn: 'player',
 		playerScore: 0,
 		cpuScore: 0,
-		remaining: MATCH_SECONDS,
+		remaining: modeProfile('football').matchSeconds,
 		startedAt: 0,
 		lastFrame: performance.now(),
 		timeLowSpoken: false,
@@ -708,6 +701,8 @@ import {
 	function setRulesMode(key) {
 		if (key !== 'football' && key !== 'street') return;
 		state.rulesMode = key;
+		state.ownerHits = 0;
+		if (state.mode === 'ready') state.remaining = currentMode().matchSeconds;
 		for (const button of rulesButtons) {
 			button.classList.toggle('is-active', button.getAttribute('data-rules') === key);
 		}
@@ -716,6 +711,8 @@ import {
 
 	function showMatchSetup() {
 		state.mode = 'ready';
+		state.remaining = currentMode().matchSeconds;
+		state.ownerHits = 0;
 		state.dragging = false;
 		state.selectedCap = null;
 		state.currentShot = null;
@@ -730,7 +727,7 @@ import {
 		state.turn = 'player';
 		state.playerScore = 0;
 		state.cpuScore = 0;
-		state.remaining = MATCH_SECONDS;
+		state.remaining = currentMode().matchSeconds;
 		state.startedAt = performance.now();
 		state.timeLowSpoken = false;
 		state.ownerHits = 0;
@@ -914,15 +911,16 @@ import {
 	function releaseDrag(point) {
 		const cap = state.selectedCap;
 		if (!cap) return;
-		const drag = clampVector({ x: cap.x - point.x, y: cap.y - point.y }, PHYSICS.maxDrag);
+		const physics = currentMode().physics;
+		const drag = clampVector({ x: cap.x - point.x, y: cap.y - point.y }, physics.maxDrag);
 		cancelDrag();
 		if (Math.hypot(drag.x, drag.y) < 10) return;
 		if (isInvalidKeeperFlick(cap, drag)) {
 			showToast('Keeper can only move back toward goal while the ball is safe.');
 			return;
 		}
-		cap.vx = drag.x * PHYSICS.powerScale;
-		cap.vy = drag.y * PHYSICS.powerScale;
+		cap.vx = drag.x * physics.powerScale;
+		cap.vy = drag.y * physics.powerScale;
 		state.restartTaker = null;
 		state.currentShot = {
 			side: 'player',
@@ -1000,7 +998,7 @@ import {
 	function updateCpu(dt) {
 		if (state.turn !== 'cpu' || !isSettled()) return;
 		state.cpuThinkTimer += dt;
-		if (state.cpuThinkTimer < MATCH_PACING.cpuThinkDelay) return;
+		if (state.cpuThinkTimer < currentMode().pacing.cpuThinkDelay) return;
 		state.cpuThinkTimer = 0;
 		cpuShoot();
 	}
@@ -1008,7 +1006,7 @@ import {
 	function updateTurnAfterSettle(dt) {
 		if (state.turn !== 'settling' || !isSettled()) return;
 		state.settleTimer += dt;
-		if (state.settleTimer < MATCH_PACING.settleDelay) return;
+		if (state.settleTimer < currentMode().pacing.settleDelay) return;
 		resolveShot();
 	}
 
@@ -1022,6 +1020,7 @@ import {
 			beginCpuShot(cap);
 			return;
 		}
+		const physics = currentMode().physics;
 		const plan = planCpuTurn({
 			ball,
 			cpuCaps,
@@ -1029,9 +1028,9 @@ import {
 			difficulty: state.difficulty,
 			pitch: FIELD,
 			goal: GOAL,
-			friction: PHYSICS.friction,
-			maxDrag: PHYSICS.maxDrag,
-			powerScale: PHYSICS.cpuPowerScale,
+			friction: physics.friction,
+			maxDrag: physics.maxDrag,
+			powerScale: physics.cpuPowerScale,
 		});
 		if (!plan) return;
 		const cap = plan.cap;
@@ -1057,7 +1056,7 @@ import {
 	function resolveShot() {
 		const shot = state.currentShot;
 		if (!shot) return;
-		if (shot.side === 'player' && shot.touchedOwner && !shot.touchedBall && !shot.scored) {
+		if (ownerRuleActive() && shot.side === 'player' && shot.touchedOwner && !shot.touchedBall && !shot.scored) {
 			handleOwnerHit();
 		} else if (!shot.scored && shot.touchedBall && Math.random() < 0.12) {
 			playCommentary('near_miss');
@@ -1116,6 +1115,7 @@ import {
 	}
 
 	function handleOwnerHit() {
+		if (!ownerRuleActive()) return;
 		state.ownerHits += 1;
 		const reaction = ownerReaction(state.ownerHits);
 		if (reaction.stage === 'collect') {
@@ -1249,8 +1249,9 @@ import {
 	function applyFriction(body, dt) {
 		const speed = Math.hypot(body.vx, body.vy);
 		if (speed <= 0) return;
-		const next = Math.max(0, speed - PHYSICS.friction * dt);
-		if (next < PHYSICS.restSpeed) {
+		const physics = currentMode().physics;
+		const next = Math.max(0, speed - physics.friction * dt);
+		if (next < physics.restSpeed) {
 			body.vx = 0;
 			body.vy = 0;
 			return;
@@ -1260,9 +1261,10 @@ import {
 	}
 
 	function collideWalls(body) {
+		const physics = currentMode().physics;
 		Object.assign(
 			body,
-			resolveCounterWalls({ body, pitch: FIELD, goal: GOAL, restitution: PHYSICS.wallRestitution })
+			resolveCounterWalls({ body, pitch: FIELD, goal: GOAL, restitution: physics.wallRestitution })
 		);
 	}
 
@@ -1288,7 +1290,7 @@ import {
 				if (a === ball && b.type === 'cap') state.lastTouch = b.side;
 				if (b === ball && a.type === 'cap') state.lastTouch = a.side;
 			}
-			const impulse = (-(1 + PHYSICS.restitution) * speed) / (1 / a.mass + 1 / b.mass);
+			const impulse = (-(1 + currentMode().physics.restitution) * speed) / (1 / a.mass + 1 / b.mass);
 			const ix = impulse * nx;
 			const iy = impulse * ny;
 			a.vx -= ix / a.mass;
@@ -1300,7 +1302,7 @@ import {
 		if (state.currentShot) {
 			if (a === ball || b === ball) state.currentShot.touchedBall = true;
 			const owner = getOwner();
-			if (a === owner || b === owner) {
+			if (ownerRuleActive() && (a === owner || b === owner)) {
 				state.currentShot.touchedOwner = true;
 				if (
 					state.currentShot.side === 'player' &&
@@ -1361,11 +1363,11 @@ import {
 		playGoalCelebration();
 		if (goal.ownGoal) playCommentary(side === 'player' ? 'own_goal_player' : 'own_goal_cpu');
 		updateHud();
-		if (state.playerScore >= GOAL_TARGET || state.cpuScore >= GOAL_TARGET) {
+		if (state.playerScore >= currentMode().goalTarget || state.cpuScore >= currentMode().goalTarget) {
 			endGame('goal_target');
 			return;
 		}
-		state.goalCooldown = MATCH_PACING.goalPause;
+		state.goalCooldown = currentMode().pacing.goalPause;
 		resetPositions(side === 'player' ? 'cpu' : 'player');
 	}
 
@@ -1397,7 +1399,7 @@ import {
 	}
 
 	function isSettled() {
-		return bodies.every((body) => Math.hypot(body.vx, body.vy) < PHYSICS.restSpeed + 1);
+		return bodies.every((body) => Math.hypot(body.vx, body.vy) < currentMode().physics.restSpeed + 1);
 	}
 
 	function draw() {
@@ -1451,6 +1453,7 @@ import {
 	}
 
 	function drawAmbientGlow() {
+		if (!ownerRuleActive()) return;
 		const owner = getOwner();
 		const reaction = ownerReaction(state.ownerHits);
 		const intensity = Math.min(state.ownerHits / OWNER_LIMITS.collectAt, 1);
@@ -1487,14 +1490,15 @@ import {
 
 	function drawCap(cap) {
 		const selected = cap === state.selectedCap;
+		const isOwner = cap.owner && ownerRuleActive();
 		ctx.save();
-		ctx.shadowColor = selected ? '#FBE9B8' : cap.owner ? ownerGlowColor() : 'rgba(0,0,0,0.36)';
-		ctx.shadowBlur = selected ? 24 : cap.owner ? 20 : 10;
+		ctx.shadowColor = selected ? '#FBE9B8' : isOwner ? ownerGlowColor() : 'rgba(0,0,0,0.36)';
+		ctx.shadowBlur = selected ? 24 : isOwner ? 20 : 10;
 		ctx.beginPath();
 		ctx.arc(cap.x, cap.y, cap.r, 0, Math.PI * 2);
-		ctx.fillStyle = cap.owner ? '#E6A817' : cap.color;
+		ctx.fillStyle = isOwner ? '#E6A817' : cap.color;
 		ctx.fill();
-		ctx.lineWidth = cap.owner ? 5 : 4;
+		ctx.lineWidth = isOwner ? 5 : 4;
 		ctx.strokeStyle = cap.side === 'player' ? 'rgba(248,248,250,0.74)' : 'rgba(229,211,244,0.74)';
 		ctx.stroke();
 		ctx.shadowBlur = 0;
@@ -1505,11 +1509,11 @@ import {
 			ctx.strokeStyle = '#FBE9B8';
 			ctx.stroke();
 		}
-		ctx.fillStyle = cap.owner ? '#171717' : '#F8F8FA';
+		ctx.fillStyle = isOwner ? '#171717' : '#F8F8FA';
 		ctx.font = '800 20px Open Sans, sans-serif';
 		ctx.textAlign = 'center';
 		ctx.textBaseline = 'middle';
-		ctx.fillText(cap.role === 'keeper' ? 'K' : cap.owner ? 'O' : cap.side === 'player' ? 'Y' : 'C', cap.x, cap.y);
+		ctx.fillText(cap.role === 'keeper' ? 'K' : isOwner ? 'O' : cap.side === 'player' ? 'Y' : 'C', cap.x, cap.y);
 		ctx.restore();
 	}
 
@@ -1530,8 +1534,9 @@ import {
 	function drawAim() {
 		if (!state.dragging || !state.selectedCap || !state.dragPoint) return;
 		const cap = state.selectedCap;
-		const drag = clampVector({ x: cap.x - state.dragPoint.x, y: cap.y - state.dragPoint.y }, PHYSICS.maxDrag);
-		const aim = analyzeAim({ cap, drag, ball, obstacles: bodies, maxDrag: PHYSICS.maxDrag, bounds: FIELD });
+		const physics = currentMode().physics;
+		const drag = clampVector({ x: cap.x - state.dragPoint.x, y: cap.y - state.dragPoint.y }, physics.maxDrag);
+		const aim = analyzeAim({ cap, drag, ball, obstacles: bodies, maxDrag: physics.maxDrag, bounds: FIELD });
 		if (aim.status === 'idle') return;
 		const invalidKeeper = isInvalidKeeperFlick(cap, drag);
 		const blocked = aim.status === 'blocked';
@@ -1674,6 +1679,7 @@ import {
 	}
 
 	function updateHud() {
+		const mode = currentMode();
 		if (playerScoreEl) playerScoreEl.textContent = String(state.playerScore);
 		if (cpuScoreEl) cpuScoreEl.textContent = String(state.cpuScore);
 		if (timeEl) timeEl.textContent = String(Math.max(0, Math.ceil(state.remaining)));
@@ -1685,7 +1691,9 @@ import {
 			turnPill.textContent =
 				state.turn === 'player' ? 'Your turn' : state.turn === 'cpu' ? 'Computer turn' : 'Ball moving';
 		}
-		if (ownerPill) {
+		if (ownerPill && !mode.ownerRule) {
+			ownerPill.textContent = 'Owner rule off';
+		} else if (ownerPill) {
 			const reaction = ownerReaction(state.ownerHits);
 			ownerPill.textContent =
 				reaction.stage === 'vexed' || reaction.stage === 'collect'
@@ -1696,6 +1704,10 @@ import {
 							? 'Owner watching'
 							: 'Owner calm';
 		}
+		if (modeSummaryEl) modeSummaryEl.textContent = mode.summary;
+		if (modeHelpEl) modeHelpEl.textContent = mode.help;
+		if (matchLengthEl) matchLengthEl.textContent = `${mode.matchSeconds} active seconds`;
+		if (goalTargetEl) goalTargetEl.textContent = `First to ${mode.goalTarget}`;
 		if (muteButton) muteButton.setAttribute('aria-pressed', String(state.muted));
 		if (muteLabel) muteLabel.textContent = state.muted ? 'Muted' : 'Sound on';
 	}
@@ -2013,7 +2025,15 @@ import {
 	}
 
 	function rulesLabel() {
-		return state.rulesMode === 'football' ? 'Football rules' : 'Street rules';
+		return currentMode().label;
+	}
+
+	function currentMode() {
+		return modeProfile(state.rulesMode);
+	}
+
+	function ownerRuleActive() {
+		return currentMode().ownerRule;
 	}
 
 	function closestTo(items, point) {
