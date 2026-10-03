@@ -3,6 +3,7 @@ import test from 'node:test';
 
 import {
 	detectBoundaryEvent,
+	goalKickKeeperPositions,
 	insetPitch,
 	isBallEnteringGoal,
 	restartPlacement,
@@ -121,4 +122,16 @@ test('restart placements leave playable space between the taker and ball', () =>
 		assert.ok(placement.ball.x > pitch.x && placement.ball.x < pitch.x + pitch.width);
 		assert.ok(placement.ball.y > pitch.y && placement.ball.y < pitch.y + pitch.height);
 	}
+});
+
+test('goal kicks return both keepers to their own goal areas', () => {
+	const bottomRestart = { type: 'goal_kick', edge: 'bottom', awardedTo: 'player', exitPoint: { x: 180, y: 950 } };
+	const bottomPositions = goalKickKeeperPositions({ event: bottomRestart, pitch });
+	assert.deepEqual(bottomPositions.cpu, { x: 360, y: 97 });
+	assert.deepEqual(bottomPositions.player, { x: 360, y: 816 });
+
+	const topRestart = { type: 'goal_kick', edge: 'top', awardedTo: 'cpu', exitPoint: { x: 540, y: 20 } };
+	const topPositions = goalKickKeeperPositions({ event: topRestart, pitch });
+	assert.deepEqual(topPositions.cpu, { x: 360, y: 164 });
+	assert.deepEqual(topPositions.player, { x: 360, y: 883 });
 });

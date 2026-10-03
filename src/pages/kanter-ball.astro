@@ -488,6 +488,7 @@ import { planCpuTurn } from '../lib/kanter-ball/cpu.js';
 import { advanceMatchClock, MATCH_PACING } from '../lib/kanter-ball/pacing.js';
 import {
 	detectBoundaryEvent,
+	goalKickKeeperPositions,
 	insetPitch,
 	isBallEnteringGoal,
 	restartPlacement,
@@ -1104,11 +1105,26 @@ import {
 			placement.role === 'keeper'
 				? teamCaps.filter((cap) => cap.role === 'keeper')
 				: teamCaps.filter((cap) => cap.role !== 'keeper');
-		const taker = closestTo(eligible.length ? eligible : teamCaps, placement.taker);
+		let taker = closestTo(eligible.length ? eligible : teamCaps, placement.taker);
 		ball.x = placement.ball.x;
 		ball.y = placement.ball.y;
-		taker.x = placement.taker.x;
-		taker.y = placement.taker.y;
+		if (event.type === 'goal_kick') {
+			const keeperPositions = goalKickKeeperPositions({
+				event,
+				pitch: FIELD,
+				ballRadius: ball.r,
+				capRadius: 25,
+			});
+			const playerKeeper = playerCaps.find((cap) => cap.role === 'keeper');
+			const cpuKeeper = cpuCaps.find((cap) => cap.role === 'keeper');
+			if (playerKeeper) Object.assign(playerKeeper, keeperPositions.player);
+			if (cpuKeeper) Object.assign(cpuKeeper, keeperPositions.cpu);
+			taker = event.awardedTo === 'player' ? playerKeeper || taker : cpuKeeper || taker;
+			clearGoalKickSpace([playerKeeper, cpuKeeper].filter(Boolean));
+		} else {
+			taker.x = placement.taker.x;
+			taker.y = placement.taker.y;
+		}
 		state.currentShot = null;
 		state.selectedCap = null;
 		state.restartTaker = taker;
@@ -1121,6 +1137,33 @@ import {
 			event.type === 'throw_in' ? 'throw-in' : event.type === 'goal_kick' ? 'goal kick' : 'corner';
 		showToast(`${team} ${label}.`);
 		track('restart_awarded', { type: event.type, side: event.awardedTo, rules: state.rulesMode });
+	}
+
+	function clearGoalKickSpace(keepers) {
+		const anchors = [ball, ...keepers];
+		for (const cap of [...playerCaps, ...cpuCaps]) {
+			if (cap.role === 'keeper') continue;
+			for (const anchor of anchors) {
+				const minimumDistance = cap.r + anchor.r + 8;
+				let dx = cap.x - anchor.x;
+				let dy = cap.y - anchor.y;
+				let currentDistance = Math.hypot(dx, dy);
+				if (currentDistance >= minimumDistance) continue;
+				if (currentDistance < 0.001) {
+					dx = cap.x <= FIELD.x + FIELD.width / 2 ? -1 : 1;
+					dy = cap.side === 'player' ? -1 : 1;
+					currentDistance = Math.hypot(dx, dy);
+				}
+				cap.x = Math.min(
+					FIELD.x + FIELD.width - cap.r,
+					Math.max(FIELD.x + cap.r, anchor.x + (dx / currentDistance) * minimumDistance)
+				);
+				cap.y = Math.min(
+					FIELD.y + FIELD.height - cap.r,
+					Math.max(FIELD.y + cap.r, anchor.y + (dy / currentDistance) * minimumDistance)
+				);
+			}
+		}
 	}
 
 	function applyFriction(body, dt) {

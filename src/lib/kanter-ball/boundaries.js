@@ -108,6 +108,22 @@ export function restartPlacement({ event, pitch, ballRadius = 14, capRadius = 24
 	};
 }
 
+export function goalKickKeeperPositions({ event, pitch, ballRadius = 14, capRadius = 25 }) {
+	const placement = restartPlacement({ event, pitch, ballRadius, capRadius });
+	const centerX = pitch.x + pitch.width / 2;
+	const bottom = pitch.y + pitch.height;
+	const goalLineOffset = capRadius + ballRadius;
+	const homes = {
+		cpu: { x: centerX, y: pitch.y + goalLineOffset },
+		player: { x: centerX, y: bottom - goalLineOffset },
+	};
+
+	return {
+		cpu: event.awardedTo === 'cpu' ? placement.taker : homes.cpu,
+		player: event.awardedTo === 'player' ? placement.taker : homes.player,
+	};
+}
+
 function crossing(edge, before, after, threshold) {
 	const crossed =
 		edge === 'left' || edge === 'top'
