@@ -485,7 +485,11 @@ const gameSchema = {
 
 <script>
 import { planCpuTurn } from '../lib/kanter-ball/cpu.js';
-import { isBallInKeeperDanger, nextKeeperRecoveryPosition } from '../lib/kanter-ball/keeper.js';
+import {
+	isBallInKeeperDanger,
+	isKeeperRecoveryFlick,
+	nextKeeperRecoveryPosition,
+} from '../lib/kanter-ball/keeper.js';
 import { OWNER_COMMENTARY, ownerReaction, OWNER_LIMITS } from '../lib/kanter-ball/owner.js';
 import { advanceMatchClock, MATCH_PACING } from '../lib/kanter-ball/pacing.js';
 import {
@@ -882,15 +886,6 @@ import {
 		if (state.mode !== 'running' || state.turn !== 'player' || !isSettled()) return false;
 		const cap = playerCaps.find((item) => distance(point, item) <= item.r + 18);
 		if (!cap) return false;
-		if (
-			state.rulesMode === 'football' &&
-			cap.role === 'keeper' &&
-			cap !== state.restartTaker &&
-			!isBallInKeeperDanger({ side: 'player', ball, pitch: FIELD })
-		) {
-			showToast('Keeper stays home until the ball enters your defensive third.');
-			return false;
-		}
 		state.selectedCap = cap;
 		state.dragging = true;
 		state.dragPoint = point;
@@ -903,6 +898,16 @@ import {
 		const drag = clampVector({ x: cap.x - point.x, y: cap.y - point.y }, PHYSICS.maxDrag);
 		cancelDrag();
 		if (Math.hypot(drag.x, drag.y) < 10) return;
+		if (
+			state.rulesMode === 'football' &&
+			cap.role === 'keeper' &&
+			cap !== state.restartTaker &&
+			!isBallInKeeperDanger({ side: 'player', ball, pitch: FIELD }) &&
+			!isKeeperRecoveryFlick({ keeper: cap, movement: drag, side: 'player', pitch: FIELD, ballRadius: ball.r })
+		) {
+			showToast('Keeper can only move back toward goal while the ball is safe.');
+			return;
+		}
 		cap.vx = drag.x * PHYSICS.powerScale;
 		cap.vy = drag.y * PHYSICS.powerScale;
 		state.restartTaker = null;

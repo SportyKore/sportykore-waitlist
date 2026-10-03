@@ -3,6 +3,7 @@ import test from 'node:test';
 
 import {
 	isBallInKeeperDanger,
+	isKeeperRecoveryFlick,
 	keeperHomePosition,
 	nextKeeperRecoveryPosition,
 } from '../src/lib/kanter-ball/keeper.js';
@@ -40,5 +41,30 @@ test('a keeper holds position while its own goal is under threat', () => {
 	assert.deepEqual(
 		nextKeeperRecoveryPosition({ keeper, side: 'cpu', ball: { x: 360, y: 170, r: 14 }, pitch }),
 		{ x: 420, y: 210, moved: false }
+	);
+});
+
+test('a stranded player keeper can be flicked back toward goal while the ball is safe', () => {
+	const keeper = { x: 470, y: 560, r: 25 };
+	assert.equal(
+		isKeeperRecoveryFlick({ keeper, movement: { x: -35, y: 90 }, side: 'player', pitch }),
+		true
+	);
+});
+
+test('a player keeper cannot be flicked farther into attack while the ball is safe', () => {
+	const keeper = { x: 470, y: 560, r: 25 };
+	assert.equal(
+		isKeeperRecoveryFlick({ keeper, movement: { x: 20, y: -90 }, side: 'player', pitch }),
+		false
+	);
+	assert.equal(
+		isKeeperRecoveryFlick({
+			keeper: { x: 360, y: 855, r: 25 },
+			movement: { x: 0, y: -40 },
+			side: 'player',
+			pitch,
+		}),
+		false
 	);
 });

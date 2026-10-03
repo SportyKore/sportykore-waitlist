@@ -18,6 +18,17 @@ export function isBallInKeeperDanger({ side, ball, pitch, depth = KEEPER_DANGER_
 		: ball.y >= pitch.y + pitch.height - dangerLine;
 }
 
+export function isKeeperRecoveryFlick({ keeper, movement, side, pitch, ballRadius = 14 }) {
+	if (!keeper || !movement || !pitch) return false;
+	const home = keeperHomePosition({ side, pitch, capRadius: keeper.r || 25, ballRadius });
+	const currentDistance = Math.hypot(home.x - keeper.x, home.y - keeper.y);
+	const projectedDistance = Math.hypot(
+		home.x - (keeper.x + movement.x),
+		home.y - (keeper.y + movement.y)
+	);
+	return currentDistance > 4 && projectedDistance < currentDistance - 1;
+}
+
 export function nextKeeperRecoveryPosition({
 	keeper,
 	side,
