@@ -486,6 +486,7 @@ const gameSchema = {
 <script>
 import { planCpuTurn } from '../lib/kanter-ball/cpu.js';
 import { isBallInKeeperDanger, nextKeeperRecoveryPosition } from '../lib/kanter-ball/keeper.js';
+import { ownerReaction, OWNER_LIMITS } from '../lib/kanter-ball/owner.js';
 import { advanceMatchClock, MATCH_PACING } from '../lib/kanter-ball/pacing.js';
 import {
 	detectBoundaryEvent,
@@ -536,12 +537,6 @@ import {
 	const FIELD_INSET = 28;
 	const FIELD = insetPitch(PITCH, FIELD_INSET);
 	const GOAL = { width: 186, depth: 34 };
-	const OWNER_LIMITS = {
-		calmMax: 2,
-		warnStart: 3,
-		vexStart: 5,
-		collectAt: 7,
-	};
 	const PHYSICS = {
 		friction: 410,
 		maxDrag: 125,
@@ -567,11 +562,11 @@ import {
 		goal: { lines: ['Goooal!', 'Na goal be that!', 'Sweet finish!'], clips: [] },
 		near_miss: { lines: ['Ah! Close one', 'Bad luck'], clips: [] },
 		save: { lines: ['Keeper save am!', 'No entry!'], clips: [] },
-		owner_1: { lines: ['no vex the owner of the ball oo'], clips: [] },
-		owner_2: { lines: ['no vex the owner oo, na him get the ball'], clips: [] },
-		owner_vex: { lines: ['owner don vex'], clips: [] },
-		owner_warn: { lines: ['owner don warn you oo'], clips: [] },
-		owner_collect: { lines: ['owner don collect him ball'], clips: [] },
+		owner_1: { lines: ['Una know say na him be owner of the ball o. No vex am.'], clips: [] },
+		owner_2: { lines: ['Una know say na him be owner of the ball o. Him go collect him ball o.'], clips: [] },
+		owner_vex: { lines: ['Owner of the ball don dey vex o!'], clips: [] },
+		owner_warn: { lines: ['Owner don warn una o!'], clips: [] },
+		owner_collect: { lines: ['Owner don collect him ball!'], clips: [] },
 		time_low: { lines: ['Time dey go oo!'], clips: [] },
 		full_time: { lines: ['Time up! Good game'], clips: [] },
 	};
@@ -1069,24 +1064,25 @@ import {
 
 	function handleOwnerHit() {
 		state.ownerHits += 1;
-		if (state.ownerHits >= OWNER_LIMITS.collectAt) {
+		const reaction = ownerReaction(state.ownerHits);
+		if (reaction.stage === 'collect') {
 			showToast('owner don collect him ball');
 			track('owner_collect', currentResultData('owner_collect'));
 			endGame('owner_collect');
 			return;
 		}
-		if (state.ownerHits >= OWNER_LIMITS.vexStart) {
-			showToast('owner don vex');
-			playCommentary('owner_vex');
+		if (reaction.stage === 'vexed') {
+			showToast('owner of the ball don dey vex o');
+			playCommentary(reaction.commentary);
 			return;
 		}
-		if (state.ownerHits >= OWNER_LIMITS.warnStart) {
-			showToast('no vex the owner oo, na him get the ball');
-			playCommentary('owner_2');
+		if (reaction.stage === 'warning') {
+			showToast('na him be owner of the ball o — him go collect am');
+			playCommentary(reaction.commentary);
 			return;
 		}
 		showToast('no vex the owner of the ball oo');
-		playCommentary('owner_1');
+		playCommentary(reaction.commentary);
 	}
 
 	function stepPhysics(dt) {
@@ -1406,10 +1402,23 @@ import {
 
 	function drawAmbientGlow() {
 		const owner = getOwner();
+		const reaction = ownerReaction(state.ownerHits);
 		const intensity = Math.min(state.ownerHits / OWNER_LIMITS.collectAt, 1);
 		if (intensity <= 0) return;
+		if (reaction.stage === 'warning' || reaction.stage === 'vexed' || reaction.stage === 'collect') {
+			const pulse = prefersReducedMotion ? 0.5 : 0.5 + Math.sin(performance.now() / 180) * 0.5;
+			const isRed = reaction.tone === 'red';
+			ctx.save();
+			roundRect(PITCH.x, PITCH.y, PITCH.width, PITCH.height, 24);
+			ctx.clip();
+			ctx.fillStyle = isRed
+				? `rgba(229,57,53,${0.08 + pulse * 0.09})`
+				: `rgba(230,168,23,${0.055 + pulse * 0.065})`;
+			ctx.fillRect(PITCH.x, PITCH.y, PITCH.width, PITCH.height);
+			ctx.restore();
+		}
 		const glow = ctx.createRadialGradient(owner.x, owner.y, 35, owner.x, owner.y, 360);
-		const yellow = state.ownerHits < OWNER_LIMITS.vexStart;
+		const yellow = reaction.tone !== 'red';
 		glow.addColorStop(
 			0,
 			yellow ? `rgba(230,168,23,${0.2 + intensity * 0.25})` : `rgba(229,57,53,${0.24 + intensity * 0.3})`
@@ -1524,12 +1533,15 @@ import {
 				state.turn === 'player' ? 'Your turn' : state.turn === 'cpu' ? 'Computer turn' : 'Ball moving';
 		}
 		if (ownerPill) {
+			const reaction = ownerReaction(state.ownerHits);
 			ownerPill.textContent =
-				state.ownerHits >= OWNER_LIMITS.vexStart
+				reaction.stage === 'vexed' || reaction.stage === 'collect'
 					? 'Owner vexed'
-					: state.ownerHits >= OWNER_LIMITS.warnStart
+					: reaction.stage === 'warning'
 						? 'Owner warning'
-						: 'Owner calm';
+						: reaction.stage === 'alert'
+							? 'Owner watching'
+							: 'Owner calm';
 		}
 		if (muteButton) muteButton.setAttribute('aria-pressed', String(state.muted));
 		if (muteLabel) muteLabel.textContent = state.muted ? 'Muted' : 'Sound on';
@@ -1757,8 +1769,9 @@ import {
 	}
 
 	function ownerGlowColor() {
-		if (state.ownerHits >= OWNER_LIMITS.vexStart) return '#E53935';
-		if (state.ownerHits >= OWNER_LIMITS.warnStart) return '#E6A817';
+		const reaction = ownerReaction(state.ownerHits);
+		if (reaction.tone === 'red') return '#E53935';
+		if (reaction.tone === 'yellow') return '#E6A817';
 		return 'rgba(251,233,184,0.72)';
 	}
 
