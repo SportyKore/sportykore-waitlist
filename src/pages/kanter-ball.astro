@@ -40,7 +40,7 @@ const gameSchema = {
 					</p>
 					<div class="flex flex-wrap gap-3 text-sm font-bold text-white/76">
 						<span class="kanter-pill">7v7 turns</span>
-						<span class="kanter-pill">90 seconds</span>
+						<span class="kanter-pill">90 active seconds</span>
 						<span class="kanter-pill">First to 3</span>
 					</div>
 				</div>
@@ -485,6 +485,7 @@ const gameSchema = {
 
 <script>
 import { planCpuTurn } from '../lib/kanter-ball/cpu.js';
+import { advanceMatchClock, MATCH_PACING } from '../lib/kanter-ball/pacing.js';
 import {
 	detectBoundaryEvent,
 	insetPitch,
@@ -927,12 +928,18 @@ import {
 	}
 
 	function tickRun(dt) {
-		state.remaining = Math.max(0, MATCH_SECONDS - (performance.now() - state.startedAt) / 1000);
+		const clock = advanceMatchClock({
+			remaining: state.remaining,
+			dt,
+			turn: state.turn,
+			goalCooldown: state.goalCooldown,
+		});
+		state.remaining = clock.remaining;
 		if (state.remaining <= 10 && !state.timeLowSpoken) {
 			state.timeLowSpoken = true;
 			playCommentary('time_low');
 		}
-		if (state.remaining <= 0) {
+		if (clock.shouldEnd) {
 			endGame('full_time');
 			return;
 		}
@@ -958,7 +965,7 @@ import {
 	function updateCpu(dt) {
 		if (state.turn !== 'cpu' || !isSettled()) return;
 		state.cpuThinkTimer += dt;
-		if (state.cpuThinkTimer < 0.45) return;
+		if (state.cpuThinkTimer < MATCH_PACING.cpuThinkDelay) return;
 		state.cpuThinkTimer = 0;
 		cpuShoot();
 	}
@@ -966,7 +973,7 @@ import {
 	function updateTurnAfterSettle(dt) {
 		if (state.turn !== 'settling' || !isSettled()) return;
 		state.settleTimer += dt;
-		if (state.settleTimer < 0.42) return;
+		if (state.settleTimer < MATCH_PACING.settleDelay) return;
 		resolveShot();
 	}
 
@@ -1239,7 +1246,7 @@ import {
 			endGame('goal_target');
 			return;
 		}
-		state.goalCooldown = 0.8;
+		state.goalCooldown = MATCH_PACING.goalPause;
 		resetPositions(side === 'player' ? 'cpu' : 'player');
 	}
 
