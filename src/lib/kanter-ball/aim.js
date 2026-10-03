@@ -42,6 +42,7 @@ export function analyzeAim({ cap, drag, ball, obstacles = [], maxDrag, bounds = 
 			contactPoint: null,
 			firstCollision: null,
 			willContactBall: false,
+			ballPath: null,
 		};
 	}
 
@@ -62,6 +63,39 @@ export function analyzeAim({ cap, drag, ball, obstacles = [], maxDrag, bounds = 
 		x: cap.x + direction.x * guideEndDistance,
 		y: cap.y + direction.y * guideEndDistance,
 	};
+	let ballPath = null;
+	if (willContactBall) {
+		const impactX = ball.x - guideEnd.x;
+		const impactY = ball.y - guideEnd.y;
+		const impactMagnitude = Math.hypot(impactX, impactY);
+		const ballDirection = {
+			x: impactMagnitude > 0 ? impactX / impactMagnitude : direction.x,
+			y: impactMagnitude > 0 ? impactY / impactMagnitude : direction.y,
+		};
+		const boundaryDistance = rayBoundsDistance(ball, ballDirection, bounds, ball.r || 0);
+		const ballCollisions = obstacles
+			.filter((body) => body && body !== cap && body !== ball)
+			.map((target) => ({
+				target,
+				distance: rayCircleEntry(ball, ballDirection, target, (ball.r || 0) + (target.r || 0)),
+			}))
+			.filter((collision) => collision.distance !== null && collision.distance <= boundaryDistance)
+			.sort((a, b) => a.distance - b.distance);
+		const ballFirstCollision = ballCollisions[0] || null;
+		const ballDistance = ballFirstCollision ? ballFirstCollision.distance : boundaryDistance;
+		ballPath = {
+			direction: ballDirection,
+			start: {
+				x: ball.x + ballDirection.x * (ball.r + 7),
+				y: ball.y + ballDirection.y * (ball.r + 7),
+			},
+			end: {
+				x: ball.x + ballDirection.x * ballDistance,
+				y: ball.y + ballDirection.y * ballDistance,
+			},
+			firstCollision: ballFirstCollision,
+		};
+	}
 
 	return {
 		status: willContactBall ? 'ball' : firstCollision ? 'blocked' : 'open',
@@ -72,5 +106,6 @@ export function analyzeAim({ cap, drag, ball, obstacles = [], maxDrag, bounds = 
 		contactPoint: firstCollision ? guideEnd : null,
 		firstCollision,
 		willContactBall,
+		ballPath,
 	};
 }

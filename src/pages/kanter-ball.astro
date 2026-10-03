@@ -1564,6 +1564,56 @@ import {
 			ctx.stroke();
 		}
 
+		if (aim.ballPath) {
+			const ballPathColor = '#F8F8FA';
+			ctx.save();
+			ctx.shadowColor = 'rgba(18,18,18,0.8)';
+			ctx.shadowBlur = 7;
+			ctx.strokeStyle = ballPathColor;
+			ctx.lineWidth = 4;
+			ctx.setLineDash([10, 9]);
+			ctx.beginPath();
+			ctx.moveTo(aim.ballPath.start.x, aim.ballPath.start.y);
+			ctx.lineTo(aim.ballPath.end.x, aim.ballPath.end.y);
+			ctx.stroke();
+			ctx.setLineDash([]);
+			const ballArrowAngle = Math.atan2(aim.ballPath.direction.y, aim.ballPath.direction.x);
+			ctx.fillStyle = ballPathColor;
+			ctx.beginPath();
+			ctx.moveTo(aim.ballPath.end.x, aim.ballPath.end.y);
+			ctx.lineTo(
+				aim.ballPath.end.x - Math.cos(ballArrowAngle - 0.55) * 15,
+				aim.ballPath.end.y - Math.sin(ballArrowAngle - 0.55) * 15
+			);
+			ctx.lineTo(
+				aim.ballPath.end.x - Math.cos(ballArrowAngle + 0.55) * 15,
+				aim.ballPath.end.y - Math.sin(ballArrowAngle + 0.55) * 15
+			);
+			ctx.closePath();
+			ctx.fill();
+			const pathLength = Math.hypot(
+				aim.ballPath.end.x - aim.ballPath.start.x,
+				aim.ballPath.end.y - aim.ballPath.start.y
+			);
+			if (pathLength > 80) {
+				const labelDistance = Math.min(86, pathLength * 0.42);
+				const labelX =
+					aim.ballPath.start.x + aim.ballPath.direction.x * labelDistance - aim.ballPath.direction.y * 24;
+				const labelY =
+					aim.ballPath.start.y + aim.ballPath.direction.y * labelDistance + aim.ballPath.direction.x * 24;
+				ctx.shadowBlur = 0;
+				ctx.fillStyle = 'rgba(18,18,18,0.84)';
+				roundRect(labelX - 55, labelY - 14, 110, 28, 999);
+				ctx.fill();
+				ctx.fillStyle = ballPathColor;
+				ctx.font = '800 13px Open Sans, sans-serif';
+				ctx.textAlign = 'center';
+				ctx.textBaseline = 'middle';
+				ctx.fillText('BALL PATH', labelX, labelY);
+			}
+			ctx.restore();
+		}
+
 		const panelWidth = 220;
 		const panelX = Math.max(PITCH.x + 8, Math.min(PITCH.x + PITCH.width - panelWidth - 8, cap.x - panelWidth / 2));
 		const panelY = cap.y > PITCH.y + PITCH.height * 0.72 ? cap.y - cap.r - 82 : cap.y + cap.r + 20;
