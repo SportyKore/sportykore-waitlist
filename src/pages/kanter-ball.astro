@@ -498,8 +498,9 @@ import {
 	detectBoundaryEvent,
 	goalKickKeeperPositions,
 	insetPitch,
-	isBallEnteringGoal,
+	liveGoalMouthEdge,
 	restartPlacement,
+	resolveCounterWalls,
 	shouldRecordLastTouch,
 } from '../lib/kanter-ball/boundaries.js';
 
@@ -614,6 +615,7 @@ import {
 		cpuThinkTimer: 0,
 		toastTimer: 0,
 		goalCooldown: 0,
+		goalMouthStuckTurns: 0,
 		currentShot: null,
 		lastTouch: null,
 		restartTaker: null,
@@ -738,6 +740,7 @@ import {
 		state.settleTimer = 0;
 		state.cpuThinkTimer = 0;
 		state.goalCooldown = 0;
+		state.goalMouthStuckTurns = 0;
 		state.lastTouch = null;
 		state.restartTaker = null;
 		state.particles = [];
@@ -833,6 +836,7 @@ import {
 		state.currentShot = null;
 		state.lastTouch = null;
 		state.restartTaker = null;
+		state.goalMouthStuckTurns = 0;
 		state.settleTimer = 0;
 		state.cpuThinkTimer = 0;
 	}
@@ -1058,6 +1062,7 @@ import {
 		} else if (!shot.scored && shot.touchedBall && Math.random() < 0.12) {
 			playCommentary('near_miss');
 		}
+		if (recoverTrappedGoalMouth()) return;
 		recoverKeepers();
 		state.currentShot = null;
 		state.selectedCap = null;
@@ -1066,6 +1071,29 @@ import {
 		if (state.mode === 'running') {
 			showToast(state.turn === 'player' ? 'Your turn.' : 'Computer turn.');
 		}
+	}
+
+	function recoverTrappedGoalMouth() {
+		if (state.rulesMode !== 'football') {
+			state.goalMouthStuckTurns = 0;
+			return false;
+		}
+		const edge = liveGoalMouthEdge({ ball, pitch: FIELD, goal: GOAL });
+		if (!edge) {
+			state.goalMouthStuckTurns = 0;
+			return false;
+		}
+		state.goalMouthStuckTurns += 1;
+		if (state.goalMouthStuckTurns < 2) return false;
+		const defending = edge === 'top' ? 'cpu' : 'player';
+		handleBoundaryEvent({
+			type: 'goal_kick',
+			edge,
+			awardedTo: defending,
+			exitPoint: { x: ball.x, y: edge === 'top' ? FIELD.y : FIELD.y + FIELD.height },
+			recovery: true,
+		});
+		return true;
 	}
 
 	function recoverKeepers() {
@@ -1180,13 +1208,14 @@ import {
 		state.selectedCap = null;
 		state.restartTaker = taker;
 		state.lastTouch = null;
+		state.goalMouthStuckTurns = 0;
 		state.turn = event.awardedTo;
 		state.settleTimer = 0;
 		state.cpuThinkTimer = 0;
 		const team = event.awardedTo === 'player' ? 'Your' : 'Computer';
 		const label =
 			event.type === 'throw_in' ? 'throw-in' : event.type === 'goal_kick' ? 'goal kick' : 'corner';
-		showToast(`${team} ${label}.`);
+		showToast(event.recovery ? `Ball recovered. ${team} ${label}.` : `${team} ${label}.`);
 		track('restart_awarded', { type: event.type, side: event.awardedTo, rules: state.rulesMode });
 	}
 
@@ -1231,26 +1260,10 @@ import {
 	}
 
 	function collideWalls(body) {
-		const inTopGoal =
-			body.type === 'ball' && isBallEnteringGoal({ ball: body, pitch: FIELD, goal: GOAL, edge: 'top' });
-		const inBottomGoal =
-			body.type === 'ball' && isBallEnteringGoal({ ball: body, pitch: FIELD, goal: GOAL, edge: 'bottom' });
-		if (body.x - body.r < FIELD.x) {
-			body.x = FIELD.x + body.r;
-			body.vx = Math.abs(body.vx) * PHYSICS.wallRestitution;
-		}
-		if (body.x + body.r > FIELD.x + FIELD.width) {
-			body.x = FIELD.x + FIELD.width - body.r;
-			body.vx = -Math.abs(body.vx) * PHYSICS.wallRestitution;
-		}
-		if (!inTopGoal && body.y - body.r < FIELD.y) {
-			body.y = FIELD.y + body.r;
-			body.vy = Math.abs(body.vy) * PHYSICS.wallRestitution;
-		}
-		if (!inBottomGoal && body.y + body.r > FIELD.y + FIELD.height) {
-			body.y = FIELD.y + FIELD.height - body.r;
-			body.vy = -Math.abs(body.vy) * PHYSICS.wallRestitution;
-		}
+		Object.assign(
+			body,
+			resolveCounterWalls({ body, pitch: FIELD, goal: GOAL, restitution: PHYSICS.wallRestitution })
+		);
 	}
 
 	function collideBodies(a, b) {

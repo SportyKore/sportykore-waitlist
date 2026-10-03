@@ -64,6 +64,81 @@ export function isBallEnteringGoal({ ball, pitch, goal, edge }) {
 	return false;
 }
 
+export function liveGoalMouthEdge({ ball, pitch, goal }) {
+	const goalLeft = pitch.x + pitch.width / 2 - goal.width / 2;
+	const goalRight = pitch.x + pitch.width / 2 + goal.width / 2;
+	if (ball.x <= goalLeft || ball.x >= goalRight) return null;
+	const top = pitch.y;
+	const bottom = pitch.y + pitch.height;
+	if (ball.y - ball.r < top && ball.y + ball.r >= top) return 'top';
+	if (ball.y + ball.r > bottom && ball.y - ball.r <= bottom) return 'bottom';
+	return null;
+}
+
+export function resolveCounterWalls({ body, pitch, goal, restitution = 0.56 }) {
+	const next = { ...body };
+	const left = pitch.x;
+	const right = pitch.x + pitch.width;
+	const top = pitch.y;
+	const bottom = pitch.y + pitch.height;
+	const goalLeft = pitch.x + pitch.width / 2 - goal.width / 2;
+	const goalRight = pitch.x + pitch.width / 2 + goal.width / 2;
+	const fitsGoalOpening = next.x - next.r >= goalLeft && next.x + next.r <= goalRight;
+	const overlapsGoalOpening = next.x + next.r > goalLeft && next.x - next.r < goalRight;
+	const insideTopPocket = next.y < top && overlapsGoalOpening;
+	const insideBottomPocket = next.y > bottom && overlapsGoalOpening;
+
+	if (next.x - next.r < left) {
+		next.x = left + next.r;
+		next.vx = Math.abs(next.vx) * restitution;
+	}
+	if (next.x + next.r > right) {
+		next.x = right - next.r;
+		next.vx = -Math.abs(next.vx) * restitution;
+	}
+
+	if (next.y - next.r < top) {
+		if (fitsGoalOpening || insideTopPocket) {
+			constrainGoalPocketSides(next, goalLeft, goalRight, restitution);
+			const back = top - goal.depth;
+			if (next.y - next.r < back) {
+				next.y = back + next.r;
+				next.vy = Math.abs(next.vy) * restitution;
+			}
+		} else {
+			next.y = top + next.r;
+			next.vy = Math.abs(next.vy) * restitution;
+		}
+	}
+
+	if (next.y + next.r > bottom) {
+		if (fitsGoalOpening || insideBottomPocket) {
+			constrainGoalPocketSides(next, goalLeft, goalRight, restitution);
+			const back = bottom + goal.depth;
+			if (next.y + next.r > back) {
+				next.y = back - next.r;
+				next.vy = -Math.abs(next.vy) * restitution;
+			}
+		} else {
+			next.y = bottom - next.r;
+			next.vy = -Math.abs(next.vy) * restitution;
+		}
+	}
+
+	return next;
+}
+
+function constrainGoalPocketSides(body, left, right, restitution) {
+	if (body.x - body.r < left) {
+		body.x = left + body.r;
+		body.vx = Math.abs(body.vx) * restitution;
+	}
+	if (body.x + body.r > right) {
+		body.x = right - body.r;
+		body.vx = -Math.abs(body.vx) * restitution;
+	}
+}
+
 export function shouldRecordLastTouch(relativeNormalSpeed) {
 	return Number.isFinite(relativeNormalSpeed) && relativeNormalSpeed < -1;
 }

@@ -6,7 +6,9 @@ import {
 	goalKickKeeperPositions,
 	insetPitch,
 	isBallEnteringGoal,
+	liveGoalMouthEdge,
 	restartPlacement,
+	resolveCounterWalls,
 	shouldRecordLastTouch,
 } from '../src/lib/kanter-ball/boundaries.js';
 
@@ -56,6 +58,47 @@ test('ball passes through the goal mouth from the first moment it crosses the go
 		}),
 		false
 	);
+});
+
+test('a counter can enter the goal mouth but still collides with the back and side walls', () => {
+	const entering = resolveCounterWalls({
+		body: { x: 360, y: 930, r: 25, vx: 0, vy: 200 },
+		pitch,
+		goal,
+	});
+	assert.ok(entering.y > pitch.y + pitch.height - entering.r);
+
+	const atBack = resolveCounterWalls({
+		body: { x: 360, y: 960, r: 25, vx: 0, vy: 200 },
+		pitch,
+		goal,
+	});
+	assert.equal(atBack.y, pitch.y + pitch.height + goal.depth - atBack.r);
+	assert.ok(atBack.vy < 0);
+
+	const atPost = resolveCounterWalls({
+		body: { x: 275, y: 930, r: 25, vx: -100, vy: 20 },
+		pitch,
+		goal,
+	});
+	assert.equal(atPost.x, pitch.x + pitch.width / 2 - goal.width / 2 + atPost.r);
+	assert.ok(atPost.vx > 0);
+});
+
+test('the solid goal line remains active outside the posts', () => {
+	const result = resolveCounterWalls({
+		body: { x: 180, y: 930, r: 25, vx: 0, vy: 200 },
+		pitch,
+		goal,
+	});
+	assert.equal(result.y, pitch.y + pitch.height - result.r);
+	assert.ok(result.vy < 0);
+});
+
+test('detects a live ball straddling the goal line without calling it a goal', () => {
+	assert.equal(liveGoalMouthEdge({ ball: { x: 360, y: 928, r: 14 }, pitch, goal }), 'bottom');
+	assert.equal(liveGoalMouthEdge({ ball: { x: 360, y: 940, r: 14 }, pitch, goal }), null);
+	assert.equal(liveGoalMouthEdge({ ball: { x: 180, y: 928, r: 14 }, pitch, goal }), null);
 });
 
 test('active shooter is the fallback when collision attribution is temporarily unavailable', () => {
