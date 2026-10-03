@@ -919,6 +919,17 @@ import {
 			showToast('Keeper can only move back toward goal while the ball is safe.');
 			return;
 		}
+		const prediction = analyzeAim({
+			cap,
+			drag,
+			ball,
+			obstacles: bodies,
+			maxDrag: physics.maxDrag,
+			bounds: FIELD,
+			friction: physics.friction,
+			powerScale: physics.powerScale,
+			restSpeed: physics.restSpeed,
+		});
 		cap.vx = drag.x * physics.powerScale;
 		cap.vy = drag.y * physics.powerScale;
 		state.restartTaker = null;
@@ -929,6 +940,7 @@ import {
 			touchedOwner: false,
 			scored: false,
 			ownerWarned: false,
+			predictedBallDirection: prediction.ballPath?.direction || null,
 		};
 		state.turn = 'settling';
 		state.settleTimer = 0;
@@ -1047,6 +1059,7 @@ import {
 			touchedOwner: false,
 			scored: false,
 			ownerWarned: false,
+			predictedBallDirection: null,
 		};
 		state.turn = 'settling';
 		state.settleTimer = 0;
@@ -1274,8 +1287,13 @@ import {
 		const dist = Math.hypot(dx, dy);
 		const minDist = a.r + b.r;
 		if (dist <= 0 || dist >= minDist) return;
-		const nx = dx / dist;
-		const ny = dy / dist;
+		let nx = dx / dist;
+		let ny = dy / dist;
+		const predictedImpact = predictedBallImpactNormal(a, b);
+		if (predictedImpact) {
+			nx = predictedImpact.x;
+			ny = predictedImpact.y;
+		}
 		const overlap = minDist - dist;
 		a.x -= (nx * overlap) / 2;
 		a.y -= (ny * overlap) / 2;
@@ -1286,6 +1304,15 @@ import {
 		const rvy = b.vy - a.vy;
 		const speed = rvx * nx + rvy * ny;
 		if (speed < 0) {
+			if (
+				state.currentShot?.predictedBallDirection &&
+				!state.currentShot.touchedBall &&
+				(a === state.currentShot.cap || b === state.currentShot.cap) &&
+				a !== ball &&
+				b !== ball
+			) {
+				state.currentShot.predictedBallDirection = null;
+			}
 			if (shouldRecordLastTouch(speed)) {
 				if (a === ball && b.type === 'cap') state.lastTouch = b.side;
 				if (b === ball && a.type === 'cap') state.lastTouch = a.side;
@@ -1321,6 +1348,16 @@ import {
 				playCommentary('save');
 			}
 		}
+	}
+
+	function predictedBallImpactNormal(a, b) {
+		const shot = state.currentShot;
+		if (!shot?.predictedBallDirection || shot.touchedBall) return null;
+		if (a === shot.cap && b === ball) return shot.predictedBallDirection;
+		if (a === ball && b === shot.cap) {
+			return { x: -shot.predictedBallDirection.x, y: -shot.predictedBallDirection.y };
+		}
+		return null;
 	}
 
 	function checkGoal() {
@@ -1536,25 +1573,38 @@ import {
 		const cap = state.selectedCap;
 		const physics = currentMode().physics;
 		const drag = clampVector({ x: cap.x - state.dragPoint.x, y: cap.y - state.dragPoint.y }, physics.maxDrag);
-		const aim = analyzeAim({ cap, drag, ball, obstacles: bodies, maxDrag: physics.maxDrag, bounds: FIELD });
+		const aim = analyzeAim({
+			cap,
+			drag,
+			ball,
+			obstacles: bodies,
+			maxDrag: physics.maxDrag,
+			bounds: FIELD,
+			friction: physics.friction,
+			powerScale: physics.powerScale,
+			restSpeed: physics.restSpeed,
+		});
 		if (aim.status === 'idle') return;
 		const invalidKeeper = isInvalidKeeperFlick(cap, drag);
 		const blocked = aim.status === 'blocked';
-		const color = invalidKeeper || blocked ? '#FF6B64' : aim.willContactBall ? '#F2A900' : '#FBE9B8';
+		const tooWeak = aim.status === 'short';
+		const color = invalidKeeper || blocked || tooWeak ? '#FF6B64' : aim.willContactBall ? '#F2A900' : '#FBE9B8';
 		const statusLabel = invalidKeeper
 			? 'KEEPER: RECOVER ONLY'
-			: aim.willContactBall
-				? 'BALL CONTACT'
-				: blocked
-					? 'PLAYER BLOCKING'
-					: 'OPEN FLICK';
+			: tooWeak
+				? 'MORE POWER NEEDED'
+				: aim.willContactBall
+					? 'BALL CONTACT'
+					: blocked
+						? 'PLAYER BLOCKING'
+						: 'OPEN FLICK';
 		const startX = cap.x + aim.direction.x * (cap.r + 12);
 		const startY = cap.y + aim.direction.y * (cap.r + 12);
 		ctx.save();
 		ctx.strokeStyle = color;
 		ctx.lineWidth = 6;
 		ctx.lineCap = 'round';
-		ctx.setLineDash(invalidKeeper || blocked ? [8, 9] : [15, 10]);
+		ctx.setLineDash(invalidKeeper || blocked || tooWeak ? [8, 9] : [15, 10]);
 		ctx.beginPath();
 		ctx.moveTo(startX, startY);
 		ctx.lineTo(aim.guideEnd.x, aim.guideEnd.y);

@@ -29,7 +29,17 @@ function rayBoundsDistance(origin, direction, bounds, radius) {
 	return Math.min(...distances.filter((distance) => distance >= 0 && Number.isFinite(distance)));
 }
 
-export function analyzeAim({ cap, drag, ball, obstacles = [], maxDrag, bounds = null }) {
+export function analyzeAim({
+	cap,
+	drag,
+	ball,
+	obstacles = [],
+	maxDrag,
+	bounds = null,
+	friction = null,
+	powerScale = null,
+	restSpeed = 0,
+}) {
 	const magnitude = Math.hypot(drag?.x || 0, drag?.y || 0);
 	const power = maxDrag > 0 ? clamp01(magnitude / maxDrag) : 0;
 	if (!cap || !ball || magnitude < MIN_AIM_DISTANCE) {
@@ -48,6 +58,11 @@ export function analyzeAim({ cap, drag, ball, obstacles = [], maxDrag, bounds = 
 
 	const direction = { x: drag.x / magnitude, y: drag.y / magnitude };
 	const guideDistance = rayBoundsDistance(cap, direction, bounds, cap.r || 0);
+	const initialSpeed = powerScale ? magnitude * powerScale : null;
+	const stoppingDistance =
+		initialSpeed !== null && friction > 0
+			? Math.max(0, (initialSpeed * initialSpeed - restSpeed * restSpeed) / (2 * friction))
+			: Number.POSITIVE_INFINITY;
 	const targets = [ball, ...obstacles.filter((body) => body && body !== cap && body !== ball)];
 	const collisions = targets
 		.map((target) => ({
@@ -57,7 +72,9 @@ export function analyzeAim({ cap, drag, ball, obstacles = [], maxDrag, bounds = 
 		.filter((collision) => collision.distance !== null && collision.distance <= guideDistance)
 		.sort((a, b) => a.distance - b.distance);
 	const firstCollision = collisions[0] || null;
-	const willContactBall = firstCollision?.target === ball;
+	const reachesFirstCollision = !firstCollision || stoppingDistance + 2 >= firstCollision.distance;
+	const ballIsFirstCollision = firstCollision?.target === ball;
+	const willContactBall = ballIsFirstCollision && reachesFirstCollision;
 	const guideEndDistance = firstCollision ? firstCollision.distance : guideDistance;
 	const guideEnd = {
 		x: cap.x + direction.x * guideEndDistance,
@@ -98,9 +115,11 @@ export function analyzeAim({ cap, drag, ball, obstacles = [], maxDrag, bounds = 
 	}
 
 	return {
-		status: willContactBall ? 'ball' : firstCollision ? 'blocked' : 'open',
+		status: ballIsFirstCollision && !reachesFirstCollision ? 'short' : willContactBall ? 'ball' : firstCollision ? 'blocked' : 'open',
 		power,
 		magnitude,
+		stoppingDistance,
+		reachesFirstCollision,
 		direction,
 		guideEnd,
 		contactPoint: firstCollision ? guideEnd : null,

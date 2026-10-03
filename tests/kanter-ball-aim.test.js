@@ -43,6 +43,37 @@ test('stops the predicted ball path at its first player collision', () => {
 	assert.ok(aim.ballPath.end.x < defender.x);
 });
 
+test('does not promise ball movement when the selected power cannot reach it', () => {
+	const aim = analyzeAim({
+		cap,
+		ball,
+		drag: { x: 16, y: 0 },
+		maxDrag: 125,
+		friction: 410,
+		powerScale: 7.6,
+		restSpeed: 10,
+	});
+	assert.equal(aim.status, 'short');
+	assert.equal(aim.willContactBall, false);
+	assert.equal(aim.ballPath, null);
+	assert.ok(aim.stoppingDistance < aim.firstCollision.distance);
+});
+
+test('shows the ball path once the shot has enough energy to make contact', () => {
+	const aim = analyzeAim({
+		cap,
+		ball,
+		drag: { x: 100, y: 0 },
+		maxDrag: 125,
+		friction: 410,
+		powerScale: 7.6,
+		restSpeed: 10,
+	});
+	assert.equal(aim.status, 'ball');
+	assert.equal(aim.willContactBall, true);
+	assert.ok(aim.ballPath);
+});
+
 test('marks an intervening player as blocking the ball', () => {
 	const defender = { x: 175, y: 100, r: 25, type: 'cap' };
 	const aim = analyzeAim({ cap, ball, obstacles: [defender], drag: { x: 100, y: 0 }, maxDrag: 125 });
