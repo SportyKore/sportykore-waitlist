@@ -1,7 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { advanceMatchClock, MATCH_PACING } from '../src/lib/kanter-ball/pacing.js';
+import {
+	advanceMatchClock,
+	crossedCountdownThreshold,
+	MATCH_PACING,
+} from '../src/lib/kanter-ball/pacing.js';
 
 test('clock runs while the player decides and while the ball is moving', () => {
 	assert.equal(
@@ -40,4 +44,10 @@ test('pacing delays stay short and ordered', () => {
 	assert.ok(MATCH_PACING.settleDelay < MATCH_PACING.cpuThinkDelay);
 	assert.ok(MATCH_PACING.cpuThinkDelay < MATCH_PACING.goalPause);
 	assert.ok(MATCH_PACING.goalPause < 1);
+});
+
+test('countdown commentary only triggers when the clock crosses ten seconds', () => {
+	assert.equal(crossedCountdownThreshold({ previous: 90, current: 70, threshold: 10 }), false);
+	assert.equal(crossedCountdownThreshold({ previous: 11, current: 10, threshold: 10 }), true);
+	assert.equal(crossedCountdownThreshold({ previous: 9, current: 8, threshold: 10 }), false);
 });

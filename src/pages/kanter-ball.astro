@@ -492,7 +492,7 @@ import {
 } from '../lib/kanter-ball/keeper.js';
 import { modeProfile } from '../lib/kanter-ball/modes.js';
 import { OWNER_COMMENTARY, ownerReaction, OWNER_LIMITS } from '../lib/kanter-ball/owner.js';
-import { advanceMatchClock } from '../lib/kanter-ball/pacing.js';
+import { advanceMatchClock, crossedCountdownThreshold } from '../lib/kanter-ball/pacing.js';
 import { classifyGoal } from '../lib/kanter-ball/scoring.js';
 import {
 	detectBoundaryEvent,
@@ -710,6 +710,8 @@ import {
 	}
 
 	function showMatchSetup() {
+		stopCommentary();
+		stopCelebration();
 		state.mode = 'ready';
 		state.remaining = currentMode().matchSeconds;
 		state.ownerHits = 0;
@@ -723,6 +725,8 @@ import {
 
 	function startGame() {
 		unlockAudio();
+		stopCommentary();
+		stopCelebration();
 		state.mode = 'running';
 		state.turn = 'player';
 		state.playerScore = 0;
@@ -973,6 +977,7 @@ import {
 	}
 
 	function tickRun(dt) {
+		const previousRemaining = state.remaining;
 		const clock = advanceMatchClock({
 			remaining: state.remaining,
 			dt,
@@ -980,7 +985,10 @@ import {
 			goalCooldown: state.goalCooldown,
 		});
 		state.remaining = clock.remaining;
-		if (state.remaining <= 10 && !state.timeLowSpoken) {
+		if (
+			!state.timeLowSpoken &&
+			crossedCountdownThreshold({ previous: previousRemaining, current: state.remaining, threshold: 10 })
+		) {
 			state.timeLowSpoken = true;
 			playCommentary('time_low');
 		}

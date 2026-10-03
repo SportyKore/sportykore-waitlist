@@ -13,3 +13,8 @@ export function advanceMatchClock({ remaining, dt, turn, goalCooldown }) {
 		shouldEnd: nextRemaining <= 0 && turn !== 'settling' && goalCooldown <= 0,
 	};
 }
+
+export function crossedCountdownThreshold({ previous, current, threshold }) {
+	if (![previous, current, threshold].every(Number.isFinite)) return false;
+	return previous > threshold && current <= threshold;
+}
