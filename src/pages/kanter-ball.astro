@@ -599,6 +599,7 @@ import {
 	const FIELD_INSET = 28;
 	const FIELD = insetPitch(PITCH, FIELD_INSET);
 	const GOAL = { width: 186, depth: 34 };
+	/** @type {Record<string, { label: string }>} */
 	const DIFFICULTIES = {
 		easy: {
 			label: 'Easy',
@@ -610,6 +611,7 @@ import {
 			label: 'Hard',
 		},
 	};
+	/** @type {Record<string, { lines: string[]; clips: string[]; volume?: number }>} */
 	const COMMENTARY = {
 		kickoff: { lines: ['Make we start!', 'Game don start oo'], clips: [] },
 		goal: { lines: ['Goooal!', 'Na goal be that!', 'Sweet finish!'], clips: [] },
@@ -634,8 +636,28 @@ import {
 		},
 	};
 	const AMBIENCE = {
-		url: '',
-		volume: 0.25,
+		url: '/audio/kanter-ball/fred-background-music.m4a',
+		volume: 0.04,
+	};
+	const FLICK_SOUND = {
+		volume: 0.16,
+		minSpeed: 180,
+		maxSpeed: 1050,
+		duration: 0.13,
+	};
+
+	type KanterBody = {
+		type: string;
+		side: string;
+		role: string;
+		x: number;
+		y: number;
+		vx: number;
+		vy: number;
+		r: number;
+		mass: number;
+		color: string;
+		owner: boolean;
 	};
 
 	const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -654,7 +676,7 @@ import {
 		records: readRecords(),
 		muted: readMuted(),
 		audioReady: false,
-		selectedCap: null,
+		selectedCap: null as KanterBody | null,
 		dragging: false,
 		dragPoint: null,
 		settleTimer: 0,
@@ -664,28 +686,29 @@ import {
 		goalMouthStuckTurns: 0,
 		currentShot: null,
 		lastTouch: null,
-		restartTaker: null,
+		restartTaker: null as KanterBody | null,
 		particles: [],
 		audio: {
-			ctx: null,
-			ambience: null,
-			ambienceGain: null,
-			ambienceAudio: null,
-			commentaryAudio: null,
+			ctx: null as AudioContext | null,
+			ambience: null as AudioBufferSourceNode | null,
+			ambienceGain: null as GainNode | null,
+			ambienceAudio: null as HTMLAudioElement | null,
+			commentaryAudio: null as HTMLAudioElement | null,
 			commentaryPriority: 0,
 			commentaryToken: 0,
-			pendingCommentary: null,
-			celebrationAudio: null,
+			pendingCommentary: null as string | null,
+			celebrationAudio: null as HTMLAudioElement | null,
+			sfxCtx: null as AudioContext | null,
 			lastCommentaryEvent: null,
 			lastCommentaryAt: 0,
 			duckTimer: 0,
 		},
 	};
 
-	let ball = makeBody({ type: 'ball', side: 'neutral', x: 360, y: 490, r: 14, mass: 0.7, color: '#F8F8FA' });
-	let playerCaps = [];
-	let cpuCaps = [];
-	let bodies = [];
+	let ball: KanterBody = makeBody({ type: 'ball', side: 'neutral', x: 360, y: 490, r: 14, mass: 0.7, color: '#F8F8FA' });
+	let playerCaps: KanterBody[] = [];
+	let cpuCaps: KanterBody[] = [];
+	let bodies: KanterBody[] = [];
 
 	updateHud();
 	resize();
@@ -959,6 +982,7 @@ import {
 		});
 		cap.vx = drag.x * physics.powerScale;
 		cap.vy = drag.y * physics.powerScale;
+		playFlickSound(Math.hypot(cap.vx, cap.vy));
 		state.restartTaker = null;
 		state.currentShot = {
 			side: 'player',
@@ -1060,7 +1084,7 @@ import {
 			cap.vx = direction.x * 520;
 			cap.vy = direction.y * 520;
 			state.restartTaker = null;
-			beginCpuShot(cap);
+			beginCpuShot(cap, null, Math.hypot(cap.vx, cap.vy));
 			return;
 		}
 		const physics = currentMode().physics;
@@ -1079,10 +1103,11 @@ import {
 		const cap = plan.cap;
 		cap.vx = plan.velocity.x;
 		cap.vy = plan.velocity.y;
-		beginCpuShot(cap, plan.ballDirection);
+		beginCpuShot(cap, plan.ballDirection, Math.hypot(cap.vx, cap.vy));
 	}
 
-	function beginCpuShot(cap, predictedBallDirection = null) {
+	function beginCpuShot(cap, predictedBallDirection = null, flickSpeed = 0) {
+		playFlickSound(flickSpeed || Math.hypot(cap.vx, cap.vy));
 		state.currentShot = {
 			side: 'cpu',
 			cap,
@@ -1144,7 +1169,7 @@ import {
 		for (const keeper of [
 			playerCaps.find((cap) => cap.role === 'keeper'),
 			cpuCaps.find((cap) => cap.role === 'keeper'),
-		].filter(Boolean)) {
+		].filter((keeper): keeper is KanterBody => Boolean(keeper))) {
 			const candidate = nextKeeperRecoveryPosition({ keeper, side: keeper.side, ball, pitch: FIELD });
 			if (!candidate.moved) continue;
 			const blocked = bodies.some(
@@ -1819,15 +1844,31 @@ import {
 		if (AMBIENCE.url) {
 			const audio = new Audio(AMBIENCE.url);
 			audio.loop = true;
+			audio.preload = 'auto';
 			audio.volume = AMBIENCE.volume;
-			audio.play().catch(() => {});
 			state.audio.ambienceAudio = audio;
+			audio.play().catch(() => {
+				if (state.audio.ambienceAudio === audio) state.audio.ambienceAudio = null;
+				startGeneratedAmbience();
+			});
+			audio.addEventListener(
+				'error',
+				() => {
+					if (state.audio.ambienceAudio === audio) state.audio.ambienceAudio = null;
+					startGeneratedAmbience();
+				},
+				{ once: true }
+			);
 			return;
 		}
+		startGeneratedAmbience();
+	}
+
+	function startGeneratedAmbience() {
+		if (state.muted || state.audio.ambience || state.audio.ambienceAudio) return;
 		try {
-			const AudioContext = window.AudioContext || window.webkitAudioContext;
-			if (!AudioContext) return;
-			const audioCtx = new AudioContext();
+			const audioCtx = createAudioContext();
+			if (!audioCtx) return;
 			const bufferSize = audioCtx.sampleRate * 2;
 			const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
 			const data = buffer.getChannelData(0);
@@ -1877,6 +1918,72 @@ import {
 	function setAmbienceVolume(volume) {
 		if (state.audio.ambienceGain) state.audio.ambienceGain.gain.value = volume;
 		if (state.audio.ambienceAudio) state.audio.ambienceAudio.volume = volume;
+	}
+
+	function createAudioContext() {
+		const audioWindow = window as Window & { webkitAudioContext?: typeof AudioContext };
+		const AudioContextCtor = audioWindow.AudioContext || audioWindow.webkitAudioContext;
+		if (!AudioContextCtor) return null;
+		return new AudioContextCtor();
+	}
+
+	function getSfxContext() {
+		const existing = state.audio.sfxCtx || state.audio.ctx;
+		if (existing) {
+			if (existing.state === 'suspended') existing.resume().catch(() => {});
+			return existing;
+		}
+		try {
+			const audioCtx = createAudioContext();
+			if (!audioCtx) return null;
+			state.audio.sfxCtx = audioCtx;
+			return audioCtx;
+		} catch {
+			return null;
+		}
+	}
+
+	function playFlickSound(speed) {
+		if (state.muted || !state.audioReady) return;
+		const audioCtx = getSfxContext();
+		if (!audioCtx) return;
+		const intensity = clamp(
+			(speed - FLICK_SOUND.minSpeed) / (FLICK_SOUND.maxSpeed - FLICK_SOUND.minSpeed),
+			0,
+			1
+		);
+		const now = audioCtx.currentTime;
+		const duration = FLICK_SOUND.duration + intensity * 0.04;
+		const output = audioCtx.createGain();
+		const bite = audioCtx.createOscillator();
+		const body = audioCtx.createOscillator();
+		const biteFilter = audioCtx.createBiquadFilter();
+
+		output.gain.setValueAtTime(0.0001, now);
+		output.gain.exponentialRampToValueAtTime(FLICK_SOUND.volume * (0.45 + intensity * 0.55), now + 0.008);
+		output.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+
+		bite.type = 'triangle';
+		bite.frequency.setValueAtTime(360 + intensity * 320, now);
+		bite.frequency.exponentialRampToValueAtTime(120 + intensity * 80, now + duration);
+
+		body.type = 'sine';
+		body.frequency.setValueAtTime(90 + intensity * 70, now);
+		body.frequency.exponentialRampToValueAtTime(45 + intensity * 20, now + duration);
+
+		biteFilter.type = 'bandpass';
+		biteFilter.frequency.value = 820 + intensity * 380;
+		biteFilter.Q.value = 1.8;
+
+		bite.connect(biteFilter);
+		biteFilter.connect(output);
+		body.connect(output);
+		output.connect(audioCtx.destination);
+
+		bite.start(now);
+		body.start(now);
+		bite.stop(now + duration);
+		body.stop(now + duration);
 	}
 
 	function playCommentary(eventName) {
@@ -2033,9 +2140,15 @@ import {
 
 	function track(name, data = {}) {
 		try {
-			if (typeof window.va === 'function') window.va('event', name, data);
-			if (typeof window.sportykoreAnalytics?.track === 'function') window.sportykoreAnalytics.track(name, data);
-			if (typeof window.analytics?.track === 'function') window.analytics.track(name, data);
+			const analyticsWindow =
+				/** @type {Window & { va?: (type: string, name: string, data: object) => void; sportykoreAnalytics?: { track?: (name: string, data: object) => void }; analytics?: { track?: (name: string, data: object) => void } }} */ (
+					window
+				);
+			if (typeof analyticsWindow.va === 'function') analyticsWindow.va('event', name, data);
+			if (typeof analyticsWindow.sportykoreAnalytics?.track === 'function') {
+				analyticsWindow.sportykoreAnalytics.track(name, data);
+			}
+			if (typeof analyticsWindow.analytics?.track === 'function') analyticsWindow.analytics.track(name, data);
 			window.dispatchEvent(new CustomEvent('sportykore:kanter-track', { detail: { name, data } }));
 		} catch {
 			// Analytics must never interrupt play.
