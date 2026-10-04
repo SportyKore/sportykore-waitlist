@@ -29,49 +29,49 @@ const gameSchema = {
 	structuredData={[gameSchema]}
 >
 	<main id="main" class="kanter-page bg-pitch text-white">
-		<section class="kanter-hero bg-stripe-hero px-4 pb-8 pt-6 sm:px-8 lg:pb-12 lg:pt-10">
-			<div class="mx-auto grid max-w-6xl gap-6 lg:grid-cols-[0.68fr_1.32fr] lg:items-center">
-				<div class="kanter-intro space-y-5">
-					<p class="eyebrow text-gold-soft">Sunday street-game test</p>
-					<h1 class="display-1 text-balance">Sportykore Kanter Ball</h1>
-					<p class="max-w-xl text-[1.0625rem] leading-relaxed text-white/76">
-						Pick a difficulty, flick your 7 caps, and beat the computer before the
-						owner of the ball collects it.
-					</p>
-					<div class="flex flex-wrap gap-3 text-sm font-bold text-white/76">
-						<span class="kanter-pill">7v7 turns</span>
-						<span class="kanter-pill">90 seconds</span>
-						<span class="kanter-pill">First to 3</span>
+		<section class="kanter-hero bg-stripe-hero px-4 pb-7 pt-5 sm:px-8 lg:pb-12 lg:pt-10">
+			<div class="mx-auto grid max-w-6xl gap-5 lg:grid-cols-[0.62fr_1.38fr] lg:items-center">
+				<div class="kanter-intro">
+					<p class="kanter-kicker">Bottle-cap football</p>
+					<h1>Kanter Ball</h1>
+					<p>Flick seven caps. Beat the computer.</p>
+					<div class="kanter-rules-strip" aria-label="Match settings">
+						<span>7v7</span>
+						<span data-match-length>90s</span>
+						<span data-goal-target>First 3</span>
 					</div>
 				</div>
 
 				<section class="kanter-shell" aria-label="Kanter Ball game">
 					<div class="kanter-scorebar" aria-live="polite">
-						<div>
-							<p class="kanter-score-label">You</p>
-							<strong data-player-score>0</strong>
+						<div class="kanter-team kanter-team-home">
+							<span class="kanter-team-mark" aria-hidden="true">Y</span>
+							<span>You</span>
 						</div>
-						<div>
-							<p class="kanter-score-label">CPU</p>
-							<strong data-cpu-score>0</strong>
+						<div class="kanter-scoreline">
+							<strong>
+								<span data-player-score>0</span>
+								<span>–</span>
+								<span data-cpu-score>0</span>
+							</strong>
+							<span><span data-time>90</span>s</span>
 						</div>
-						<div>
-							<p class="kanter-score-label">Time</p>
-							<strong><span data-time>90</span>s</strong>
-						</div>
-						<div>
-							<p class="kanter-score-label">Record</p>
-							<strong data-record>0</strong>
-						</div>
-						<button class="kanter-icon-button" type="button" data-mute aria-pressed="false">
-							<span data-mute-label>Sound on</span>
+						<button class="kanter-icon-button" type="button" data-mute aria-pressed="false" aria-label="Toggle sound">
+							<svg class="kanter-sound-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+								<path d="M11 5 6 9H3v6h3l5 4V5Z"></path>
+								<path d="M15.5 8.5a5 5 0 0 1 0 7"></path>
+								<path d="M18.5 5.5a9 9 0 0 1 0 13"></path>
+							</svg>
+							<svg class="kanter-sound-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+								<path d="M11 5 6 9H3v6h3l5 4V5Z"></path>
+								<path d="m16 9 5 5"></path>
+								<path d="m21 9-5 5"></path>
+							</svg>
 						</button>
-					</div>
-
-					<div class="kanter-meta">
-						<span data-turn-pill>Your turn</span>
-						<span data-difficulty-pill>Medium</span>
-						<span data-owner-pill>Owner calm</span>
+						<div class="kanter-team kanter-team-away">
+							<span class="kanter-team-mark" aria-hidden="true">C</span>
+							<span>CPU</span>
+						</div>
 					</div>
 
 					<div class="kanter-game-wrap" data-game-wrap>
@@ -87,30 +87,33 @@ const gameSchema = {
 
 						<div class="kanter-overlay is-visible" data-start-overlay>
 							<div class="kanter-overlay-card">
-								<p class="wordmark text-3xl text-gold-score">Sportykore</p>
-								<p class="eyebrow mt-3 text-gold-soft">Kanter Ball</p>
-								<h2>Pick your level</h2>
-								<p>
-									Select a cap, drag back, and release. You and the computer take
-									one flick at a time.
-								</p>
+								<p class="kanter-card-kicker">Kanter Ball</p>
+								<h2>Set match</h2>
+								<div class="kanter-rules" role="group" aria-label="Choose match rules">
+									<button type="button" data-rules="football" class="is-active">
+										<span>Football</span>
+									</button>
+									<button type="button" data-rules="street">
+										<span>Street</span>
+									</button>
+								</div>
 								<div class="kanter-difficulty" role="group" aria-label="Choose difficulty">
 									<button type="button" data-difficulty="easy">Easy</button>
 									<button type="button" data-difficulty="medium" class="is-active">Medium</button>
 									<button type="button" data-difficulty="hard">Hard</button>
 								</div>
-								<button type="button" class="btn-cta" data-start>Tap to play</button>
+								<button type="button" class="btn-cta" data-start>Start match</button>
 							</div>
 						</div>
 
 						<div class="kanter-overlay" data-end-overlay>
 							<div class="kanter-overlay-card">
-								<p class="eyebrow text-gold-soft" data-end-kicker>Full time</p>
+								<p class="kanter-card-kicker" data-end-kicker>Full time</p>
 								<h2 data-end-title>Draw game</h2>
 								<p data-end-copy>0-0 on Medium.</p>
 								<div class="kanter-end-actions">
 									<button type="button" class="btn-cta" data-share>Share result</button>
-									<button type="button" class="btn-ghost-dark" data-rematch>Rematch</button>
+									<button type="button" class="btn-ghost-dark" data-rematch>Change match</button>
 								</div>
 								<a
 									class="kanter-follow-link"
@@ -124,11 +127,6 @@ const gameSchema = {
 							</div>
 						</div>
 					</div>
-
-					<p class="kanter-help">
-						Owner hits count only when your flick hits the gold owner cap without
-						touching the ball or scoring.
-					</p>
 				</section>
 			</div>
 		</section>
@@ -157,98 +155,221 @@ const gameSchema = {
 
 	.kanter-intro {
 		order: 2;
+		max-width: 26rem;
 	}
 
-	.kanter-pill {
-		border: 1px solid rgba(248, 248, 250, 0.18);
-		border-radius: 999px;
-		background: rgba(248, 248, 250, 0.06);
-		padding: 0.45rem 0.75rem;
-	}
-
-	.kanter-shell {
-		margin-inline: auto;
-		width: 100%;
-		max-width: 37rem;
-		min-width: 0;
-		order: 1;
-	}
-
-	.kanter-scorebar {
-		display: grid;
-		grid-template-columns: repeat(4, minmax(0, 1fr));
-		gap: 0.5rem;
-		margin-bottom: 0.65rem;
-	}
-
-	.kanter-scorebar > div,
-	.kanter-icon-button {
-		min-width: 0;
-		border: 1px solid rgba(248, 248, 250, 0.14);
-		border-radius: 14px;
-		background: rgba(18, 18, 18, 0.72);
-		box-shadow: 0 10px 30px rgba(0, 0, 0, 0.22);
-		padding: 0.5rem 0.55rem;
-	}
-
-	.kanter-scorebar strong {
-		display: block;
-		color: var(--score-gold);
-		font-family: var(--font-playfair);
-		font-size: 1.35rem;
-		line-height: 1;
-	}
-
-	.kanter-score-label {
-		margin: 0 0 0.25rem;
-		color: rgba(248, 248, 250, 0.62);
-		font-size: 0.66rem;
+	.kanter-kicker,
+	.kanter-card-kicker {
+		margin: 0;
+		color: var(--gold-soft);
+		font-size: 0.78rem;
 		font-weight: 800;
 		letter-spacing: 0.08em;
 		text-transform: uppercase;
 	}
 
-	.kanter-icon-button {
-		grid-column: 1 / -1;
-		color: #ffffff;
-		font-size: 0.75rem;
-		font-weight: 800;
+	.kanter-intro h1 {
+		margin: 0.35rem 0 0;
+		font-family: var(--font-playfair);
+		font-size: clamp(2.65rem, 2.05rem + 4vw, 5rem);
+		font-weight: 850;
+		letter-spacing: 0;
+		line-height: 0.98;
 	}
 
-	.kanter-meta {
+	.kanter-intro > p:not(.kanter-kicker) {
+		margin: 0.9rem 0 0;
+		max-width: 18rem;
+		color: rgba(248, 248, 250, 0.74);
+		font-size: 1.02rem;
+		font-weight: 700;
+		line-height: 1.45;
+	}
+
+	.kanter-rules-strip {
 		display: grid;
-		grid-template-columns: 1fr;
-		gap: 0.5rem;
-		margin-bottom: 0.65rem;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		max-width: 22rem;
+		margin-top: 1.2rem;
+		border: 1px solid rgba(248, 248, 250, 0.14);
+		border-radius: 16px;
+		background: rgba(18, 18, 18, 0.54);
+		overflow: hidden;
 	}
 
-	.kanter-meta span {
-		border: 1px solid rgba(248, 248, 250, 0.12);
-		border-radius: 999px;
-		background: rgba(18, 18, 18, 0.62);
+	.kanter-rules-strip span {
+		padding: 0.72rem 0.55rem;
 		color: rgba(248, 248, 250, 0.76);
-		font-size: 0.76rem;
+		font-size: 0.78rem;
 		font-weight: 800;
-		padding: 0.45rem 0.65rem;
 		text-align: center;
+	}
+
+	.kanter-rules-strip span + span {
+		border-left: 1px solid rgba(248, 248, 250, 0.12);
+	}
+
+	.kanter-shell {
+		margin-inline: auto;
+		width: min(100%, 39.5rem);
+		max-width: 100%;
+		min-width: 0;
+		order: 1;
+		border: 1px solid rgba(248, 248, 250, 0.14);
+		border-radius: 18px;
+		background:
+			linear-gradient(180deg, rgba(44, 12, 84, 0.52), rgba(18, 18, 18, 0.92)),
+			repeating-linear-gradient(-45deg, rgba(248, 248, 250, 0.04) 0 1px, transparent 1px 18px);
+		box-shadow: var(--shadow-phone);
+		padding: 0.7rem;
+	}
+
+	.kanter-scorebar {
+		position: relative;
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+		align-items: center;
+		gap: 0.75rem;
+		border: 1px solid rgba(248, 248, 250, 0.14);
+		border-radius: 14px 14px 8px 8px;
+		background: rgba(26, 26, 31, 0.94);
+		overflow: hidden;
+		padding: 0.72rem 0.82rem;
+	}
+
+	.kanter-scorebar::after {
+		position: absolute;
+		inset: auto 0 0;
+		height: 1px;
+		background: rgba(230, 168, 23, 0.32);
+		content: "";
+	}
+
+	.kanter-team {
+		display: flex;
+		min-width: 0;
+		align-items: center;
+		gap: 0.55rem;
+		color: #ffffff;
+		font-size: 0.82rem;
+		font-weight: 800;
+		line-height: 1.1;
+	}
+
+	.kanter-team-away {
+		justify-content: flex-end;
+		color: var(--gold-soft);
+		padding-right: 3.9rem;
+		text-align: right;
+	}
+
+	.kanter-team-mark {
+		display: inline-flex;
+		width: 2.2rem;
+		height: 2.2rem;
+		flex: 0 0 auto;
+		align-items: center;
+		justify-content: center;
+		border: 2px solid rgba(248, 248, 250, 0.18);
+		border-radius: 999px;
+		background: #7a1720;
+		color: #ffffff;
+		font-size: 0.78rem;
+		font-weight: 900;
+	}
+
+	.kanter-team-away .kanter-team-mark {
+		order: 2;
+		border-color: rgba(248, 248, 250, 0.22);
+		background: var(--purple);
+		color: #ffffff;
+	}
+
+	.kanter-scoreline {
+		min-width: 0;
+		text-align: center;
+	}
+
+	.kanter-scoreline strong {
+		display: block;
+		color: var(--score-gold);
+		font-family: var(--font-open-sans);
+		font-size: clamp(2rem, 1.42rem + 2.6vw, 2.8rem);
+		font-weight: 900;
+		font-variant-numeric: tabular-nums;
+		letter-spacing: 0;
+		line-height: 1;
+	}
+
+	.kanter-scoreline > span {
+		display: inline-flex;
+		margin-top: 0.25rem;
+		border-radius: 999px;
+		background: rgba(248, 248, 250, 0.08);
+		color: var(--gold-soft);
+		font-size: 0.72rem;
+		font-weight: 800;
+		line-height: 1;
+		padding: 0.26rem 0.5rem;
+	}
+
+	.kanter-icon-button {
+		position: absolute;
+		top: 0.7rem;
+		right: 0.7rem;
+		z-index: 1;
+		display: inline-flex;
+		width: 2.25rem;
+		height: 2.25rem;
+		align-items: center;
+		justify-content: center;
+		border: 1px solid rgba(248, 248, 250, 0.14);
+		border-radius: 999px;
+		background: rgba(18, 18, 18, 0.74);
+		color: rgba(248, 248, 250, 0.82);
+		padding: 0;
+	}
+
+	.kanter-icon-button[aria-pressed="true"] {
+		color: rgba(248, 248, 250, 0.5);
+	}
+
+	.kanter-icon-button svg {
+		width: 1.1rem;
+		height: 1.1rem;
+	}
+
+	.kanter-icon-button .kanter-sound-off,
+	.kanter-icon-button[aria-pressed="true"] .kanter-sound-on {
+		display: none;
+	}
+
+	.kanter-icon-button[aria-pressed="true"] .kanter-sound-off {
+		display: block;
 	}
 
 	.kanter-game-wrap {
 		position: relative;
 		overflow: hidden;
 		width: 100%;
-		border: 1px solid rgba(248, 248, 250, 0.14);
-		border-radius: 22px;
+		min-width: 0;
+		max-width: 100%;
+		border: 1px solid rgba(248, 248, 250, 0.18);
+		border-radius: 14px;
 		background:
 			radial-gradient(circle at 50% 0%, rgba(230, 168, 23, 0.14), transparent 22%),
 			linear-gradient(180deg, #1e7a40, #14552e);
-		box-shadow: var(--shadow-phone);
+		box-shadow: 0 18px 46px rgba(0, 0, 0, 0.34);
 		touch-action: none;
+		user-select: none;
+		-webkit-user-select: none;
 	}
 
 	.kanter-canvas {
 		display: block;
 		width: 100%;
+		max-width: 100%;
+		height: auto;
 		aspect-ratio: 36 / 49;
 	}
 
@@ -296,10 +417,15 @@ const gameSchema = {
 		inset: 0;
 		z-index: 4;
 		display: none;
-		align-items: flex-start;
+		align-items: center;
 		justify-content: center;
-		background: rgba(18, 18, 18, 0.74);
-		padding: 8% 1rem 1rem;
+		background:
+			linear-gradient(180deg, rgba(18, 18, 18, 0.55), rgba(18, 18, 18, 0.82)),
+			rgba(18, 18, 18, 0.5);
+		overflow-y: auto;
+		overscroll-behavior: contain;
+		padding: 1rem;
+		-webkit-overflow-scrolling: touch;
 	}
 
 	.kanter-overlay.is-visible {
@@ -307,49 +433,67 @@ const gameSchema = {
 	}
 
 	.kanter-overlay-card {
-		width: min(100%, 22rem);
+		width: min(100%, 21.5rem);
 		border: 1px solid rgba(248, 248, 250, 0.16);
-		border-radius: 18px;
-		background: rgba(18, 18, 18, 0.94);
-		box-shadow: 0 22px 55px rgba(0, 0, 0, 0.34);
-		padding: 1.15rem;
-		text-align: center;
+		border-radius: 14px;
+		background:
+			linear-gradient(180deg, rgba(44, 12, 84, 0.42), rgba(18, 18, 18, 0.96)),
+			var(--pitch-black);
+		box-shadow: 0 22px 55px rgba(0, 0, 0, 0.38);
+		padding: 1rem;
+		text-align: left;
 	}
 
 	.kanter-overlay-card h2 {
-		margin: 0.35rem 0 0;
+		margin: 0.28rem 0 0.85rem;
 		font-family: var(--font-playfair);
-		font-size: clamp(2rem, 1.35rem + 4vw, 3rem);
+		font-size: clamp(2rem, 1.55rem + 2vw, 2.75rem);
 		line-height: 1.05;
 	}
 
-	.kanter-overlay-card p:not(.eyebrow):not(.wordmark) {
-		margin: 0.8rem auto 1.1rem;
+	.kanter-overlay-card p:not(.kanter-card-kicker) {
+		margin: 0 0 1rem;
 		color: rgba(248, 248, 250, 0.74);
 		line-height: 1.55;
 	}
 
-	.kanter-difficulty {
+	.kanter-difficulty,
+	.kanter-rules {
 		display: grid;
-		grid-template-columns: repeat(3, minmax(0, 1fr));
-		gap: 0.45rem;
-		margin: 0 0 1rem;
+		gap: 0.5rem;
+		margin: 0 0 0.75rem;
 	}
 
-	.kanter-difficulty button {
+	.kanter-difficulty {
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+	}
+
+	.kanter-rules {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+
+	.kanter-difficulty button,
+	.kanter-rules button {
+		min-height: 2.75rem;
 		border: 1px solid rgba(248, 248, 250, 0.18);
-		border-radius: 999px;
+		border-radius: 10px;
 		background: rgba(248, 248, 250, 0.07);
 		color: #ffffff;
-		font-size: 0.78rem;
+		font-size: 0.82rem;
 		font-weight: 800;
 		padding: 0.58rem 0.5rem;
 	}
 
-	.kanter-difficulty button.is-active {
+	.kanter-difficulty button.is-active,
+	.kanter-rules button.is-active {
 		border-color: var(--cta-gold);
 		background: var(--cta-gold);
 		color: #171717;
+	}
+
+	.kanter-rules button {
+		min-height: 3rem;
+		line-height: 1.2;
 	}
 
 	.kanter-end-actions {
@@ -367,14 +511,6 @@ const gameSchema = {
 		text-underline-offset: 0.25em;
 	}
 
-	.kanter-help {
-		margin: 0.8rem 0 0;
-		color: rgba(248, 248, 250, 0.62);
-		font-size: 0.82rem;
-		line-height: 1.55;
-		text-align: center;
-	}
-
 	@keyframes kanter-flash {
 		0% {
 			opacity: 0;
@@ -388,19 +524,6 @@ const gameSchema = {
 	}
 
 	@media (min-width: 640px) {
-		.kanter-scorebar {
-			grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
-		}
-
-		.kanter-icon-button {
-			grid-column: auto;
-			min-width: 4.8rem;
-		}
-
-		.kanter-meta {
-			grid-template-columns: repeat(3, minmax(0, 1fr));
-		}
-
 		.kanter-overlay {
 			align-items: center;
 			padding: 1rem;
@@ -419,6 +542,95 @@ const gameSchema = {
 		}
 	}
 
+	@media (max-width: 639px) {
+		.kanter-hero {
+			min-height: auto;
+		}
+
+		.kanter-intro {
+			margin-inline: auto;
+			width: 100%;
+		}
+
+		.kanter-shell {
+			width: calc(100vw - 2rem);
+			padding: 0.55rem;
+		}
+
+		.kanter-scorebar {
+			grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+			gap: 0.45rem;
+			padding: 0.62rem;
+		}
+
+		.kanter-team {
+			gap: 0.35rem;
+			font-size: 0.72rem;
+		}
+
+		.kanter-team-mark {
+			width: 1.8rem;
+			height: 1.8rem;
+			font-size: 0.68rem;
+		}
+
+		.kanter-team-away {
+			padding-right: 3.1rem;
+		}
+
+		.kanter-scoreline strong {
+			font-size: 2.05rem;
+		}
+
+		.kanter-overlay-card {
+			width: min(100%, 17.6rem);
+		}
+
+		.kanter-difficulty button,
+		.kanter-rules button {
+			font-size: 0.76rem;
+			padding-inline: 0.35rem;
+		}
+
+		.kanter-rules-strip {
+			max-width: none;
+		}
+	}
+
+	@media (max-width: 380px) {
+		.kanter-scorebar {
+			gap: 0.3rem;
+			padding: 0.55rem;
+		}
+
+		.kanter-overlay {
+			padding: 0.6rem;
+		}
+
+		.kanter-overlay-card {
+			padding: 0.8rem;
+		}
+
+		.kanter-overlay-card h2 {
+			font-size: 1.75rem;
+		}
+
+		.kanter-overlay-card p:not(.kanter-card-kicker) {
+			margin-bottom: 0.7rem;
+			font-size: 0.86rem;
+			line-height: 1.35;
+		}
+
+		.kanter-difficulty,
+		.kanter-rules {
+			margin-bottom: 0.65rem;
+		}
+
+		.kanter-rules button {
+			min-height: 2.7rem;
+		}
+	}
+
 	@media (prefers-reduced-motion: reduce) {
 		.kanter-toast,
 		.kanter-flash,
@@ -430,7 +642,30 @@ const gameSchema = {
 	}
 </style>
 
-<script is:inline>
+<script>
+import { analyzeAim, selectionRadius } from '../lib/kanter-ball/aim.js';
+import { commentaryPriority, shouldInterruptCommentary } from '../lib/kanter-ball/audio.js';
+import { cpuThinkDelay, planCpuTurn } from '../lib/kanter-ball/cpu.js';
+import {
+	isBallInKeeperDanger,
+	isKeeperRecoveryFlick,
+	nextKeeperRecoveryPosition,
+} from '../lib/kanter-ball/keeper.js';
+import { modeProfile } from '../lib/kanter-ball/modes.js';
+import { OWNER_COMMENTARY, ownerReaction, OWNER_LIMITS } from '../lib/kanter-ball/owner.js';
+import { advanceMatchClock, crossedCountdownThreshold } from '../lib/kanter-ball/pacing.js';
+import { collisionGeometry, lastTouchAfterCollision } from '../lib/kanter-ball/physics.js';
+import { classifyGoal } from '../lib/kanter-ball/scoring.js';
+import {
+	detectBoundaryEvent,
+	goalKickKeeperPositions,
+	insetPitch,
+	liveGoalMouthEdge,
+	restartPlacement,
+	restartClearancePositions,
+	resolveCounterWalls,
+} from '../lib/kanter-ball/boundaries.js';
+
 (() => {
 	const canvas = document.getElementById('kanter-canvas');
 	if (!(canvas instanceof HTMLCanvasElement)) return;
@@ -441,17 +676,12 @@ const gameSchema = {
 	const playerScoreEl = document.querySelector('[data-player-score]');
 	const cpuScoreEl = document.querySelector('[data-cpu-score]');
 	const timeEl = document.querySelector('[data-time]');
-	const recordEl = document.querySelector('[data-record]');
-	const turnPill = document.querySelector('[data-turn-pill]');
-	const difficultyPill = document.querySelector('[data-difficulty-pill]');
-	const ownerPill = document.querySelector('[data-owner-pill]');
 	const startOverlay = document.querySelector('[data-start-overlay]');
 	const endOverlay = document.querySelector('[data-end-overlay]');
 	const startButton = document.querySelector('[data-start]');
 	const rematchButton = document.querySelector('[data-rematch]');
 	const shareButton = document.querySelector('[data-share]');
 	const muteButton = document.querySelector('[data-mute]');
-	const muteLabel = document.querySelector('[data-mute-label]');
 	const toastEl = document.querySelector('[data-toast]');
 	const flashEl = document.querySelector('[data-flash]');
 	const endKicker = document.querySelector('[data-end-kicker]');
@@ -459,81 +689,87 @@ const gameSchema = {
 	const endCopy = document.querySelector('[data-end-copy]');
 	const followLink = document.querySelector('[data-follow-x]');
 	const difficultyButtons = Array.from(document.querySelectorAll('[data-difficulty]'));
+	const rulesButtons = Array.from(document.querySelectorAll('[data-rules]'));
+	const matchLengthEl = document.querySelector('[data-match-length]');
+	const goalTargetEl = document.querySelector('[data-goal-target]');
 
 	const MUTE_KEY = 'sportykore:kanter-ball:mute';
 	const RECORDS_KEY = 'sportykore:kanter-ball:records';
-	const MATCH_SECONDS = 90;
-	const GOAL_TARGET = 3;
 	const WORLD = { width: 720, height: 980 };
 	const PITCH = { x: 48, y: 58, width: 624, height: 864 };
+	const FIELD_INSET = 28;
+	const FIELD = insetPitch(PITCH, FIELD_INSET);
 	const GOAL = { width: 186, depth: 34 };
-	const OWNER_LIMITS = {
-		calmMax: 2,
-		warnStart: 3,
-		vexStart: 5,
-		collectAt: 7,
-	};
-	const PHYSICS = {
-		friction: 410,
-		maxDrag: 125,
-		powerScale: 7.6,
-		cpuPowerScale: 6.6,
-		restitution: 0.72,
-		wallRestitution: 0.56,
-		restSpeed: 10,
-	};
+	/** @type {Record<string, { label: string }>} */
 	const DIFFICULTIES = {
 		easy: {
 			label: 'Easy',
-			aimSpread: 0.46,
-			powerNoise: 0.34,
-			shootChance: 0.48,
-			defendChance: 0.14,
-			power: 0.68,
 		},
 		medium: {
 			label: 'Medium',
-			aimSpread: 0.22,
-			powerNoise: 0.18,
-			shootChance: 0.64,
-			defendChance: 0.3,
-			power: 0.82,
 		},
 		hard: {
 			label: 'Hard',
-			aimSpread: 0.08,
-			powerNoise: 0.08,
-			shootChance: 0.78,
-			defendChance: 0.48,
-			power: 0.94,
 		},
 	};
+	/** @type {Record<string, { lines: string[]; clips: string[]; volume?: number }>} */
 	const COMMENTARY = {
 		kickoff: { lines: ['Make we start!', 'Game don start oo'], clips: [] },
 		goal: { lines: ['Goooal!', 'Na goal be that!', 'Sweet finish!'], clips: [] },
+		own_goal_player: { lines: ['Own goal! Dem score themselves!'], clips: [] },
+		own_goal_cpu: { lines: ['Own goal! You put am for your own net!'], clips: [] },
 		near_miss: { lines: ['Ah! Close one', 'Bad luck'], clips: [] },
 		save: { lines: ['Keeper save am!', 'No entry!'], clips: [] },
-		owner_1: { lines: ['no vex the owner of the ball oo'], clips: [] },
-		owner_2: { lines: ['no vex the owner oo, na him get the ball'], clips: [] },
-		owner_vex: { lines: ['owner don vex'], clips: [] },
-		owner_warn: { lines: ['owner don warn you oo'], clips: [] },
-		owner_collect: { lines: ['owner don collect him ball'], clips: [] },
-		time_low: { lines: ['Time dey go oo!'], clips: [] },
-		full_time: { lines: ['Time up! Good game'], clips: [] },
+		owner_1: { lines: [OWNER_COMMENTARY.owner_1], clips: ['/audio/kanter-ball/owner-alert.m4a'] },
+		owner_2: { lines: [OWNER_COMMENTARY.owner_2], clips: ['/audio/kanter-ball/owner-warning.m4a'] },
+		owner_vex: { lines: [OWNER_COMMENTARY.owner_vex], clips: ['/audio/kanter-ball/owner-vexed.m4a'] },
+		owner_warn: { lines: [OWNER_COMMENTARY.owner_warn], clips: [] },
+		owner_collect: { lines: [OWNER_COMMENTARY.owner_collect], clips: ['/audio/kanter-ball/owner-collect.m4a'] },
+		time_low: {
+			lines: ['Time dey go oo!'],
+			clips: ['/audio/kanter-ball/clock-running-down.m4a'],
+			volume: 0.82,
+		},
+		full_time: {
+			lines: ['Time up! Good game'],
+			clips: ['/audio/kanter-ball/match-ends.m4a'],
+			volume: 0.82,
+		},
 	};
 	const AMBIENCE = {
-		url: '',
-		volume: 0.25,
+		url: '/audio/kanter-ball/fred-background-music.m4a',
+		volume: 0.009,
+	};
+	const FLICK_SOUND = {
+		volume: 0.50,
+		minSpeed: 180,
+		maxSpeed: 1050,
+		duration: 0.13,
+	};
+
+	type KanterBody = {
+		type: string;
+		side: string;
+		role: string;
+		x: number;
+		y: number;
+		vx: number;
+		vy: number;
+		r: number;
+		mass: number;
+		color: string;
+		owner: boolean;
 	};
 
 	const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 	const state = {
 		mode: 'ready',
 		difficulty: 'medium',
+		rulesMode: 'football',
 		turn: 'player',
 		playerScore: 0,
 		cpuScore: 0,
-		remaining: MATCH_SECONDS,
+		remaining: modeProfile('football').matchSeconds,
 		startedAt: 0,
 		lastFrame: performance.now(),
 		timeLowSpoken: false,
@@ -541,28 +777,39 @@ const gameSchema = {
 		records: readRecords(),
 		muted: readMuted(),
 		audioReady: false,
-		selectedCap: null,
+		selectedCap: null as KanterBody | null,
 		dragging: false,
 		dragPoint: null,
 		settleTimer: 0,
 		cpuThinkTimer: 0,
 		toastTimer: 0,
 		goalCooldown: 0,
+		goalMouthStuckTurns: 0,
 		currentShot: null,
+		lastTouch: null,
+		restartTaker: null as KanterBody | null,
 		particles: [],
 		audio: {
-			ctx: null,
-			ambience: null,
-			ambienceGain: null,
-			ambienceAudio: null,
+			ctx: null as AudioContext | null,
+			ambience: null as AudioBufferSourceNode | null,
+			ambienceGain: null as GainNode | null,
+			ambienceAudio: null as HTMLAudioElement | null,
+			commentaryAudio: null as HTMLAudioElement | null,
+			commentaryPriority: 0,
+			commentaryToken: 0,
+			pendingCommentary: null as string | null,
+			celebrationAudio: null as HTMLAudioElement | null,
+			sfxCtx: null as AudioContext | null,
+			lastCommentaryEvent: null,
+			lastCommentaryAt: 0,
 			duckTimer: 0,
 		},
 	};
 
-	let ball = makeBody({ type: 'ball', side: 'neutral', x: 360, y: 490, r: 14, mass: 0.7, color: '#F8F8FA' });
-	let playerCaps = [];
-	let cpuCaps = [];
-	let bodies = [];
+	let ball: KanterBody = makeBody({ type: 'ball', side: 'neutral', x: 360, y: 490, r: 14, mass: 0.7, color: '#F8F8FA' });
+	let playerCaps: KanterBody[] = [];
+	let cpuCaps: KanterBody[] = [];
+	let bodies: KanterBody[] = [];
 
 	updateHud();
 	resize();
@@ -572,8 +819,8 @@ const gameSchema = {
 	window.addEventListener('resize', resize);
 	startButton?.addEventListener('click', startGame);
 	rematchButton?.addEventListener('click', () => {
-		track('rematch_click', currentResultData());
-		startGame();
+		track('change_match_click', currentResultData());
+		showMatchSetup();
 	});
 	shareButton?.addEventListener('click', shareResult);
 	followLink?.addEventListener('click', () => track('waitlist_click', { target: 'x', ...currentResultData() }));
@@ -581,19 +828,14 @@ const gameSchema = {
 	for (const button of difficultyButtons) {
 		button.addEventListener('click', () => setDifficulty(button.getAttribute('data-difficulty') || 'medium'));
 	}
+	for (const button of rulesButtons) {
+		button.addEventListener('click', () => setRulesMode(button.getAttribute('data-rules') || 'football'));
+	}
 
 	canvas.addEventListener('pointerdown', onPointerDown);
 	canvas.addEventListener('pointermove', onPointerMove);
 	canvas.addEventListener('pointerup', onPointerUp);
-	canvas.addEventListener('pointercancel', cancelDrag);
-	canvas.addEventListener('touchstart', onTouchStart, { passive: false });
-	canvas.addEventListener('touchmove', onTouchMove, { passive: false });
-	canvas.addEventListener('touchend', onTouchEnd, { passive: false });
-	canvas.addEventListener('touchcancel', cancelDrag);
-	canvas.addEventListener('mousedown', onMouseDown);
-	canvas.addEventListener('mousemove', onMouseMove);
-	canvas.addEventListener('mouseup', onMouseUp);
-	canvas.addEventListener('mouseleave', onMouseLeave);
+	canvas.addEventListener('pointercancel', onPointerCancel);
 
 	function makeBody({ type, side, role = 'outfield', x, y, r, mass, color, owner = false }) {
 		return {
@@ -628,13 +870,40 @@ const gameSchema = {
 		updateHud();
 	}
 
+	function setRulesMode(key) {
+		if (key !== 'football' && key !== 'street') return;
+		state.rulesMode = key;
+		state.ownerHits = 0;
+		if (state.mode === 'ready') state.remaining = currentMode().matchSeconds;
+		for (const button of rulesButtons) {
+			button.classList.toggle('is-active', button.getAttribute('data-rules') === key);
+		}
+		updateHud();
+	}
+
+	function showMatchSetup() {
+		stopCommentary();
+		stopCelebration();
+		state.mode = 'ready';
+		state.remaining = currentMode().matchSeconds;
+		state.ownerHits = 0;
+		state.dragging = false;
+		state.selectedCap = null;
+		state.currentShot = null;
+		endOverlay?.classList.remove('is-visible');
+		startOverlay?.classList.add('is-visible');
+		updateHud();
+	}
+
 	function startGame() {
 		unlockAudio();
+		stopCommentary();
+		stopCelebration();
 		state.mode = 'running';
 		state.turn = 'player';
 		state.playerScore = 0;
 		state.cpuScore = 0;
-		state.remaining = MATCH_SECONDS;
+		state.remaining = currentMode().matchSeconds;
 		state.startedAt = performance.now();
 		state.timeLowSpoken = false;
 		state.ownerHits = 0;
@@ -644,13 +913,16 @@ const gameSchema = {
 		state.settleTimer = 0;
 		state.cpuThinkTimer = 0;
 		state.goalCooldown = 0;
+		state.goalMouthStuckTurns = 0;
+		state.lastTouch = null;
+		state.restartTaker = null;
 		state.particles = [];
 		startOverlay?.classList.remove('is-visible');
 		endOverlay?.classList.remove('is-visible');
 		resetPositions('player');
 		showToast('Your turn. Drag one red cap.');
 		playCommentary('kickoff');
-		track('game_start', { difficulty: difficultyLabel() });
+		track('game_start', { difficulty: difficultyLabel(), rules: state.rulesMode });
 		updateHud();
 	}
 
@@ -666,10 +938,11 @@ const gameSchema = {
 		}
 		if (endTitle) endTitle.textContent = result.title;
 		if (endCopy) {
-			endCopy.textContent = `${state.playerScore}-${state.cpuScore} on ${difficultyLabel()}. Best streak: ${state.records.bestStreak}.`;
+			endCopy.textContent = `${state.playerScore}-${state.cpuScore} · ${rulesLabel()} · ${difficultyLabel()}. Best streak: ${state.records.bestStreak}.`;
 		}
 		endOverlay?.classList.add('is-visible');
-		playCommentary(reason === 'owner_collect' ? 'owner_collect' : 'full_time');
+		if (reason === 'owner_collect') playCommentary('owner_collect');
+		else queueCommentaryAfterCelebration('full_time');
 		track('game_end', currentResultData(reason));
 		updateHud();
 	}
@@ -690,6 +963,7 @@ const gameSchema = {
 			playerScore: state.playerScore,
 			cpuScore: state.cpuScore,
 			difficulty: difficultyLabel(),
+			rules: state.rulesMode,
 			duration: Math.max(0, Math.round((performance.now() - state.startedAt) / 1000)),
 			reason,
 		};
@@ -734,12 +1008,17 @@ const gameSchema = {
 		state.dragging = false;
 		state.dragPoint = null;
 		state.currentShot = null;
+		state.lastTouch = null;
+		state.restartTaker = null;
+		state.goalMouthStuckTurns = 0;
 		state.settleTimer = 0;
 		state.cpuThinkTimer = 0;
 	}
 
 	function onPointerDown(event) {
-		beginDrag(eventPoint(event));
+		if (!event.isPrimary || event.button !== 0) return;
+		if (event.cancelable) event.preventDefault();
+		if (!beginDrag(eventPoint(event))) return;
 		try {
 			canvas.setPointerCapture(event.pointerId);
 		} catch {
@@ -748,59 +1027,31 @@ const gameSchema = {
 	}
 
 	function onPointerMove(event) {
-		if (!state.dragging) return;
+		if (!event.isPrimary || !state.dragging) return;
+		if (event.cancelable) event.preventDefault();
 		state.dragPoint = eventPoint(event);
 	}
 
 	function onPointerUp(event) {
-		if (!state.dragging) return;
+		if (!event.isPrimary || !state.dragging) return;
+		if (event.cancelable) event.preventDefault();
 		releaseDrag(eventPoint(event));
+		if (canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId);
 	}
 
-	function onTouchStart(event) {
-		const touch = event.changedTouches[0];
-		if (!touch) return;
-		event.preventDefault();
-		beginDrag(eventPoint(touch));
-	}
-
-	function onTouchMove(event) {
-		if (!state.dragging) return;
-		const touch = event.changedTouches[0];
-		if (!touch) return;
-		event.preventDefault();
-		state.dragPoint = eventPoint(touch);
-	}
-
-	function onTouchEnd(event) {
-		if (!state.dragging) return;
-		const touch = event.changedTouches[0];
-		if (!touch) return;
-		event.preventDefault();
-		releaseDrag(eventPoint(touch));
-	}
-
-	function onMouseDown(event) {
-		beginDrag(eventPoint(event));
-	}
-
-	function onMouseMove(event) {
-		if (!state.dragging) return;
-		state.dragPoint = eventPoint(event);
-	}
-
-	function onMouseUp(event) {
-		if (!state.dragging) return;
-		releaseDrag(eventPoint(event));
-	}
-
-	function onMouseLeave() {
+	function onPointerCancel(event) {
 		cancelDrag();
+		if (canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId);
 	}
 
 	function beginDrag(point) {
 		if (state.mode !== 'running' || state.turn !== 'player' || !isSettled()) return false;
-		const cap = playerCaps.find((item) => distance(point, item) <= item.r + 18);
+		const canvasWidth = canvas.getBoundingClientRect().width;
+		const cap = playerCaps.find(
+			(item) =>
+				distance(point, item) <=
+				selectionRadius({ bodyRadius: item.r, canvasCssWidth: canvasWidth, worldWidth: WORLD.width })
+		);
 		if (!cap) return false;
 		state.selectedCap = cap;
 		state.dragging = true;
@@ -811,11 +1062,29 @@ const gameSchema = {
 	function releaseDrag(point) {
 		const cap = state.selectedCap;
 		if (!cap) return;
-		const drag = clampVector({ x: cap.x - point.x, y: cap.y - point.y }, PHYSICS.maxDrag);
+		const physics = currentMode().physics;
+		const drag = clampVector({ x: cap.x - point.x, y: cap.y - point.y }, physics.maxDrag);
 		cancelDrag();
 		if (Math.hypot(drag.x, drag.y) < 10) return;
-		cap.vx = drag.x * PHYSICS.powerScale;
-		cap.vy = drag.y * PHYSICS.powerScale;
+		if (isInvalidKeeperFlick(cap, drag)) {
+			showToast('Keeper can only move back toward goal while the ball is safe.');
+			return;
+		}
+		const prediction = analyzeAim({
+			cap,
+			drag,
+			ball,
+			obstacles: bodies,
+			maxDrag: physics.maxDrag,
+			bounds: FIELD,
+			friction: physics.friction,
+			powerScale: physics.powerScale,
+			restSpeed: physics.restSpeed,
+		});
+		cap.vx = drag.x * physics.powerScale;
+		cap.vy = drag.y * physics.powerScale;
+		playFlickSound(Math.hypot(cap.vx, cap.vy));
+		state.restartTaker = null;
 		state.currentShot = {
 			side: 'player',
 			cap,
@@ -823,11 +1092,22 @@ const gameSchema = {
 			touchedOwner: false,
 			scored: false,
 			ownerWarned: false,
+			predictedBallDirection: prediction.ballPath?.direction || null,
 		};
 		state.turn = 'settling';
 		state.settleTimer = 0;
 		showToast('Shot away.');
 		updateHud();
+	}
+
+	function isInvalidKeeperFlick(cap, drag) {
+		return (
+			state.rulesMode === 'football' &&
+			cap.role === 'keeper' &&
+			cap !== state.restartTaker &&
+			!isBallInKeeperDanger({ side: 'player', ball, pitch: FIELD }) &&
+			!isKeeperRecoveryFlick({ keeper: cap, movement: drag, side: 'player', pitch: FIELD, ballRadius: ball.r })
+		);
 	}
 
 	function cancelDrag() {
@@ -845,12 +1125,22 @@ const gameSchema = {
 	}
 
 	function tickRun(dt) {
-		state.remaining = Math.max(0, MATCH_SECONDS - (performance.now() - state.startedAt) / 1000);
-		if (state.remaining <= 10 && !state.timeLowSpoken) {
+		const previousRemaining = state.remaining;
+		const clock = advanceMatchClock({
+			remaining: state.remaining,
+			dt,
+			turn: state.turn,
+			goalCooldown: state.goalCooldown,
+		});
+		state.remaining = clock.remaining;
+		if (
+			!state.timeLowSpoken &&
+			crossedCountdownThreshold({ previous: previousRemaining, current: state.remaining, threshold: 10 })
+		) {
 			state.timeLowSpoken = true;
 			playCommentary('time_low');
 		}
-		if (state.remaining <= 0) {
+		if (clock.shouldEnd) {
 			endGame('full_time');
 			return;
 		}
@@ -876,7 +1166,7 @@ const gameSchema = {
 	function updateCpu(dt) {
 		if (state.turn !== 'cpu' || !isSettled()) return;
 		state.cpuThinkTimer += dt;
-		if (state.cpuThinkTimer < 0.45) return;
+		if (state.cpuThinkTimer < cpuThinkDelay(currentMode().pacing.cpuThinkDelay, state.difficulty)) return;
 		state.cpuThinkTimer = 0;
 		cpuShoot();
 	}
@@ -884,33 +1174,41 @@ const gameSchema = {
 	function updateTurnAfterSettle(dt) {
 		if (state.turn !== 'settling' || !isSettled()) return;
 		state.settleTimer += dt;
-		if (state.settleTimer < 0.42) return;
+		if (state.settleTimer < currentMode().pacing.settleDelay) return;
 		resolveShot();
 	}
 
 	function cpuShoot() {
-		const profile = DIFFICULTIES[state.difficulty];
-		const owner = getOwner();
-		const candidates = cpuCaps.filter((cap) => cap !== owner || Math.random() > 0.25);
-		let cap = closestTo(candidates, ball);
-		let target = { x: ball.x, y: ball.y };
-
-		const cpuCanShoot = ball.y > PITCH.y + 160 && Math.random() < profile.shootChance;
-		const cpuShouldDefend =
-			ball.y > PITCH.y + PITCH.height * 0.56 && Math.random() < profile.defendChance;
-		if (cpuCanShoot) {
-			target = { x: 360 + randomBetween(-38, 38), y: PITCH.y + PITCH.height + GOAL.depth };
-			cap = closestTo(candidates, ball);
-		} else if (cpuShouldDefend) {
-			cap = closestTo(candidates, { x: ball.x, y: PITCH.y + 210 });
-			target = { x: clamp(ball.x, PITCH.x + 90, PITCH.x + PITCH.width - 90), y: PITCH.y + 275 };
+		if (state.restartTaker?.side === 'cpu') {
+			const cap = state.restartTaker;
+			const direction = normalize({ x: ball.x - cap.x, y: ball.y - cap.y });
+			cap.vx = direction.x * 520;
+			cap.vy = direction.y * 520;
+			state.restartTaker = null;
+			beginCpuShot(cap, null, Math.hypot(cap.vx, cap.vy));
+			return;
 		}
+		const physics = currentMode().physics;
+		const plan = planCpuTurn({
+			ball,
+			cpuCaps,
+			playerCaps,
+			difficulty: state.difficulty,
+			pitch: FIELD,
+			goal: GOAL,
+			friction: physics.friction,
+			maxDrag: physics.maxDrag,
+			powerScale: physics.cpuPowerScale,
+		});
+		if (!plan) return;
+		const cap = plan.cap;
+		cap.vx = plan.velocity.x;
+		cap.vy = plan.velocity.y;
+		beginCpuShot(cap, plan.ballDirection, Math.hypot(cap.vx, cap.vy));
+	}
 
-		const angle = Math.atan2(target.y - cap.y, target.x - cap.x) + randomBetween(-profile.aimSpread, profile.aimSpread);
-		const distanceToTarget = Math.min(PHYSICS.maxDrag, Math.max(48, distance(cap, target) * 0.34));
-		const power = distanceToTarget * profile.power * (1 + randomBetween(-profile.powerNoise, profile.powerNoise));
-		cap.vx = Math.cos(angle) * power * PHYSICS.cpuPowerScale;
-		cap.vy = Math.sin(angle) * power * PHYSICS.cpuPowerScale;
+	function beginCpuShot(cap, predictedBallDirection = null, flickSpeed = 0) {
+		playFlickSound(flickSpeed || Math.hypot(cap.vx, cap.vy));
 		state.currentShot = {
 			side: 'cpu',
 			cap,
@@ -918,6 +1216,7 @@ const gameSchema = {
 			touchedOwner: false,
 			scored: false,
 			ownerWarned: false,
+			predictedBallDirection,
 		};
 		state.turn = 'settling';
 		state.settleTimer = 0;
@@ -927,11 +1226,13 @@ const gameSchema = {
 	function resolveShot() {
 		const shot = state.currentShot;
 		if (!shot) return;
-		if (shot.side === 'player' && shot.touchedOwner && !shot.touchedBall && !shot.scored) {
+		if (ownerRuleActive() && shot.side === 'player' && shot.touchedOwner && !shot.touchedBall && !shot.scored) {
 			handleOwnerHit();
 		} else if (!shot.scored && shot.touchedBall && Math.random() < 0.12) {
 			playCommentary('near_miss');
 		}
+		if (recoverTrappedGoalMouth()) return;
+		recoverKeepers();
 		state.currentShot = null;
 		state.selectedCap = null;
 		state.turn = shot.side === 'player' ? 'cpu' : 'player';
@@ -941,47 +1242,185 @@ const gameSchema = {
 		}
 	}
 
+	function recoverTrappedGoalMouth() {
+		if (state.rulesMode !== 'football') {
+			state.goalMouthStuckTurns = 0;
+			return false;
+		}
+		const edge = liveGoalMouthEdge({ ball, pitch: FIELD, goal: GOAL });
+		if (!edge) {
+			state.goalMouthStuckTurns = 0;
+			return false;
+		}
+		state.goalMouthStuckTurns += 1;
+		if (state.goalMouthStuckTurns < 2) return false;
+		const defending = edge === 'top' ? 'cpu' : 'player';
+		handleBoundaryEvent({
+			type: 'goal_kick',
+			edge,
+			awardedTo: defending,
+			exitPoint: { x: ball.x, y: edge === 'top' ? FIELD.y : FIELD.y + FIELD.height },
+			recovery: true,
+		});
+		return true;
+	}
+
+	function recoverKeepers() {
+		if (state.rulesMode !== 'football' || state.mode !== 'running') return;
+		for (const keeper of [
+			playerCaps.find((cap) => cap.role === 'keeper'),
+			cpuCaps.find((cap) => cap.role === 'keeper'),
+		].filter((keeper): keeper is KanterBody => Boolean(keeper))) {
+			const candidate = nextKeeperRecoveryPosition({ keeper, side: keeper.side, ball, pitch: FIELD });
+			if (!candidate.moved) continue;
+			const blocked = bodies.some(
+				(body) =>
+					body !== keeper &&
+					Math.hypot(body.x - candidate.x, body.y - candidate.y) < body.r + keeper.r + 4
+			);
+			if (blocked) continue;
+			keeper.x = candidate.x;
+			keeper.y = candidate.y;
+		}
+	}
+
 	function handleOwnerHit() {
+		if (!ownerRuleActive()) return;
 		state.ownerHits += 1;
-		if (state.ownerHits >= OWNER_LIMITS.collectAt) {
+		const reaction = ownerReaction(state.ownerHits);
+		if (reaction.stage === 'collect') {
 			showToast('owner don collect him ball');
 			track('owner_collect', currentResultData('owner_collect'));
 			endGame('owner_collect');
 			return;
 		}
-		if (state.ownerHits >= OWNER_LIMITS.vexStart) {
-			showToast('owner don vex');
-			playCommentary('owner_vex');
+		if (reaction.stage === 'vexed') {
+			showToast('owner of the ball don dey vex o');
+			playCommentary(reaction.commentary);
 			return;
 		}
-		if (state.ownerHits >= OWNER_LIMITS.warnStart) {
-			showToast('no vex the owner oo, na him get the ball');
-			playCommentary('owner_2');
+		if (reaction.stage === 'warning') {
+			showToast('na him be owner of the ball o — him go collect am');
+			playCommentary(reaction.commentary);
 			return;
 		}
 		showToast('no vex the owner of the ball oo');
-		playCommentary('owner_1');
+		playCommentary(reaction.commentary);
 	}
 
 	function stepPhysics(dt) {
+		const previousBall = { x: ball.x, y: ball.y };
 		for (const body of bodies) {
 			body.x += body.vx * dt;
 			body.y += body.vy * dt;
 			applyFriction(body, dt);
 		}
 
-		for (const body of bodies) collideWalls(body);
+		for (const body of bodies) {
+			if (state.rulesMode === 'street' || body !== ball) collideWalls(body);
+		}
+		if (state.rulesMode === 'football') {
+			const boundaryEvent = detectBoundaryEvent({
+				previous: previousBall,
+				ball,
+				pitch: FIELD,
+				goal: GOAL,
+				lastTouch: state.lastTouch,
+				fallbackTouch: state.currentShot?.side,
+			});
+			if (boundaryEvent) {
+				handleBoundaryEvent(boundaryEvent);
+				return;
+			}
+		}
 		for (let i = 0; i < bodies.length; i += 1) {
 			for (let j = i + 1; j < bodies.length; j += 1) collideBodies(bodies[i], bodies[j]);
 		}
-		checkGoal();
+		if (state.rulesMode === 'street') {
+			checkGoal();
+			return;
+		}
+		const deflectedBoundaryEvent = detectBoundaryEvent({
+			previous: previousBall,
+			ball,
+			pitch: FIELD,
+			goal: GOAL,
+			lastTouch: state.lastTouch,
+			fallbackTouch: state.currentShot?.side,
+		});
+		if (deflectedBoundaryEvent) handleBoundaryEvent(deflectedBoundaryEvent);
+	}
+
+	function handleBoundaryEvent(event) {
+		if (event.type === 'goal') {
+			scoreGoal(event.awardedTo);
+			return;
+		}
+		for (const body of bodies) {
+			body.vx = 0;
+			body.vy = 0;
+		}
+		const teamCaps = event.awardedTo === 'player' ? playerCaps : cpuCaps;
+		const placement = restartPlacement({ event, pitch: FIELD, ballRadius: ball.r });
+		const eligible =
+			placement.role === 'keeper'
+				? teamCaps.filter((cap) => cap.role === 'keeper')
+				: teamCaps.filter((cap) => cap.role !== 'keeper');
+		let taker = closestTo(eligible.length ? eligible : teamCaps, placement.taker);
+		ball.x = placement.ball.x;
+		ball.y = placement.ball.y;
+		if (event.type === 'goal_kick') {
+			const keeperPositions = goalKickKeeperPositions({
+				event,
+				pitch: FIELD,
+				ballRadius: ball.r,
+				capRadius: 25,
+			});
+			const playerKeeper = playerCaps.find((cap) => cap.role === 'keeper');
+			const cpuKeeper = cpuCaps.find((cap) => cap.role === 'keeper');
+			if (playerKeeper) Object.assign(playerKeeper, keeperPositions.player);
+			if (cpuKeeper) Object.assign(cpuKeeper, keeperPositions.cpu);
+			taker = event.awardedTo === 'player' ? playerKeeper || taker : cpuKeeper || taker;
+		} else {
+			taker.x = placement.taker.x;
+			taker.y = placement.taker.y;
+		}
+		clearRestartSpace([taker]);
+		state.currentShot = null;
+		state.selectedCap = null;
+		state.restartTaker = taker;
+		state.lastTouch = null;
+		state.goalMouthStuckTurns = 0;
+		state.turn = event.awardedTo;
+		state.settleTimer = 0;
+		state.cpuThinkTimer = 0;
+		const team = event.awardedTo === 'player' ? 'Your' : 'Computer';
+		const label =
+			event.type === 'throw_in' ? 'throw-in' : event.type === 'goal_kick' ? 'goal kick' : 'corner';
+		showToast(event.recovery ? `Ball recovered. ${team} ${label}.` : `${team} ${label}.`);
+		track('restart_awarded', { type: event.type, side: event.awardedTo, rules: state.rulesMode });
+	}
+
+	function clearRestartSpace(protectedCaps) {
+		const protectedSet = new Set(protectedCaps.filter(Boolean));
+		const movableCaps = [...playerCaps, ...cpuCaps].filter((cap) => !protectedSet.has(cap));
+		const positions = restartClearancePositions({
+			caps: movableCaps,
+			anchors: [ball, ...protectedSet],
+			pitch: FIELD,
+		});
+		for (let index = 0; index < movableCaps.length; index += 1) {
+			movableCaps[index].x = positions[index].x;
+			movableCaps[index].y = positions[index].y;
+		}
 	}
 
 	function applyFriction(body, dt) {
 		const speed = Math.hypot(body.vx, body.vy);
 		if (speed <= 0) return;
-		const next = Math.max(0, speed - PHYSICS.friction * dt);
-		if (next < PHYSICS.restSpeed) {
+		const physics = currentMode().physics;
+		const next = Math.max(0, speed - physics.friction * dt);
+		if (next < physics.restSpeed) {
 			body.vx = 0;
 			body.vy = 0;
 			return;
@@ -991,36 +1430,19 @@ const gameSchema = {
 	}
 
 	function collideWalls(body) {
-		const inTopGoal = body.type === 'ball' && body.x > goalLeft() && body.x < goalRight() && body.y < PITCH.y + 12;
-		const inBottomGoal =
-			body.type === 'ball' && body.x > goalLeft() && body.x < goalRight() && body.y > PITCH.y + PITCH.height - 12;
-		if (body.x - body.r < PITCH.x) {
-			body.x = PITCH.x + body.r;
-			body.vx = Math.abs(body.vx) * PHYSICS.wallRestitution;
-		}
-		if (body.x + body.r > PITCH.x + PITCH.width) {
-			body.x = PITCH.x + PITCH.width - body.r;
-			body.vx = -Math.abs(body.vx) * PHYSICS.wallRestitution;
-		}
-		if (!inTopGoal && body.y - body.r < PITCH.y) {
-			body.y = PITCH.y + body.r;
-			body.vy = Math.abs(body.vy) * PHYSICS.wallRestitution;
-		}
-		if (!inBottomGoal && body.y + body.r > PITCH.y + PITCH.height) {
-			body.y = PITCH.y + PITCH.height - body.r;
-			body.vy = -Math.abs(body.vy) * PHYSICS.wallRestitution;
-		}
+		const physics = currentMode().physics;
+		Object.assign(
+			body,
+			resolveCounterWalls({ body, pitch: FIELD, goal: GOAL, restitution: physics.wallRestitution })
+		);
 	}
 
 	function collideBodies(a, b) {
-		const dx = b.x - a.x;
-		const dy = b.y - a.y;
-		const dist = Math.hypot(dx, dy);
-		const minDist = a.r + b.r;
-		if (dist <= 0 || dist >= minDist) return;
-		const nx = dx / dist;
-		const ny = dy / dist;
-		const overlap = minDist - dist;
+		const predictedImpact = predictedBallImpactNormal(a, b);
+		const collision = collisionGeometry({ a, b, preferredNormal: predictedImpact });
+		if (!collision) return;
+		const { x: nx, y: ny } = collision.normal;
+		const { overlap } = collision;
 		a.x -= (nx * overlap) / 2;
 		a.y -= (ny * overlap) / 2;
 		b.x += (nx * overlap) / 2;
@@ -1030,7 +1452,23 @@ const gameSchema = {
 		const rvy = b.vy - a.vy;
 		const speed = rvx * nx + rvy * ny;
 		if (speed < 0) {
-			const impulse = (-(1 + PHYSICS.restitution) * speed) / (1 / a.mass + 1 / b.mass);
+			if (
+				state.currentShot?.predictedBallDirection &&
+				!state.currentShot.touchedBall &&
+				(a === state.currentShot.cap || b === state.currentShot.cap) &&
+				a !== ball &&
+				b !== ball
+			) {
+				state.currentShot.predictedBallDirection = null;
+			}
+			state.lastTouch = lastTouchAfterCollision({
+				currentTouch: state.lastTouch,
+				a,
+				b,
+				ball,
+				relativeNormalSpeed: speed,
+			});
+			const impulse = (-(1 + currentMode().physics.restitution) * speed) / (1 / a.mass + 1 / b.mass);
 			const ix = impulse * nx;
 			const iy = impulse * ny;
 			a.vx -= ix / a.mass;
@@ -1042,7 +1480,7 @@ const gameSchema = {
 		if (state.currentShot) {
 			if (a === ball || b === ball) state.currentShot.touchedBall = true;
 			const owner = getOwner();
-			if (a === owner || b === owner) {
+			if (ownerRuleActive() && (a === owner || b === owner)) {
 				state.currentShot.touchedOwner = true;
 				if (
 					state.currentShot.side === 'player' &&
@@ -1055,7 +1493,6 @@ const gameSchema = {
 					cap.vy += away.y * 420;
 					state.currentShot.ownerWarned = true;
 					showToast('owner don warn you oo');
-					playCommentary('owner_warn');
 				}
 			}
 			if ((a === ball && b.role === 'keeper') || (b === ball && a.role === 'keeper')) {
@@ -1064,19 +1501,33 @@ const gameSchema = {
 		}
 	}
 
+	function predictedBallImpactNormal(a, b) {
+		const shot = state.currentShot;
+		if (!shot?.predictedBallDirection || shot.touchedBall) return null;
+		if (a === shot.cap && b === ball) return shot.predictedBallDirection;
+		if (a === ball && b === shot.cap) {
+			return { x: -shot.predictedBallDirection.x, y: -shot.predictedBallDirection.y };
+		}
+		return null;
+	}
+
 	function checkGoal() {
 		if (state.goalCooldown > 0 || state.mode !== 'running') return;
 		const left = goalLeft();
 		const right = goalRight();
-		if (ball.x > left && ball.x < right && ball.y + ball.r < PITCH.y) {
+		if (ball.x > left && ball.x < right && ball.y + ball.r < FIELD.y) {
 			scoreGoal('player');
 		}
-		if (ball.x > left && ball.x < right && ball.y - ball.r > PITCH.y + PITCH.height) {
+		if (ball.x > left && ball.x < right && ball.y - ball.r > FIELD.y + FIELD.height) {
 			scoreGoal('cpu');
 		}
 	}
 
 	function scoreGoal(side) {
+		const goal = classifyGoal({
+			scoringSide: side,
+			lastTouch: state.lastTouch || state.currentShot?.side || null,
+		});
 		if (side === 'player') {
 			state.playerScore += 1;
 			state.ownerHits = 0;
@@ -1088,14 +1539,23 @@ const gameSchema = {
 		void flashEl?.offsetWidth;
 		flashEl?.classList.add('is-active');
 		spawnParticles(ball.x, ball.y, side === 'player' ? '#E6A817' : '#E5D3F4');
-		showToast(side === 'player' ? 'Goal for you!' : 'Computer scores.');
-		playCommentary('goal');
+		showToast(
+			goal.ownGoal
+				? side === 'player'
+					? 'Own goal! Goal for you.'
+					: 'Own goal! Computer scores.'
+				: side === 'player'
+					? 'Goal for you!'
+					: 'Computer scores.'
+		);
+		playGoalCelebration();
+		if (goal.ownGoal) playCommentary(side === 'player' ? 'own_goal_player' : 'own_goal_cpu');
 		updateHud();
-		if (state.playerScore >= GOAL_TARGET || state.cpuScore >= GOAL_TARGET) {
+		if (state.playerScore >= currentMode().goalTarget || state.cpuScore >= currentMode().goalTarget) {
 			endGame('goal_target');
 			return;
 		}
-		state.goalCooldown = 0.8;
+		state.goalCooldown = currentMode().pacing.goalPause;
 		resetPositions(side === 'player' ? 'cpu' : 'player');
 	}
 
@@ -1127,7 +1587,7 @@ const gameSchema = {
 	}
 
 	function isSettled() {
-		return bodies.every((body) => Math.hypot(body.vx, body.vy) < PHYSICS.restSpeed + 1);
+		return bodies.every((body) => Math.hypot(body.vx, body.vy) < currentMode().physics.restSpeed + 1);
 	}
 
 	function draw() {
@@ -1161,11 +1621,11 @@ const gameSchema = {
 
 		ctx.strokeStyle = 'rgba(248,248,250,0.42)';
 		ctx.lineWidth = 3;
-		roundRect(PITCH.x + 28, PITCH.y + 28, PITCH.width - 56, PITCH.height - 56, 18);
+		roundRect(FIELD.x, FIELD.y, FIELD.width, FIELD.height, 18);
 		ctx.stroke();
 		ctx.beginPath();
-		ctx.moveTo(PITCH.x + 28, PITCH.y + PITCH.height / 2);
-		ctx.lineTo(PITCH.x + PITCH.width - 28, PITCH.y + PITCH.height / 2);
+		ctx.moveTo(FIELD.x, PITCH.y + PITCH.height / 2);
+		ctx.lineTo(FIELD.x + FIELD.width, PITCH.y + PITCH.height / 2);
 		ctx.stroke();
 		ctx.beginPath();
 		ctx.arc(360, PITCH.y + PITCH.height / 2, 82, 0, Math.PI * 2);
@@ -1181,11 +1641,25 @@ const gameSchema = {
 	}
 
 	function drawAmbientGlow() {
+		if (!ownerRuleActive()) return;
 		const owner = getOwner();
+		const reaction = ownerReaction(state.ownerHits);
 		const intensity = Math.min(state.ownerHits / OWNER_LIMITS.collectAt, 1);
 		if (intensity <= 0) return;
+		if (reaction.stage === 'warning' || reaction.stage === 'vexed' || reaction.stage === 'collect') {
+			const pulse = prefersReducedMotion ? 0.5 : 0.5 + Math.sin(performance.now() / 180) * 0.5;
+			const isRed = reaction.tone === 'red';
+			ctx.save();
+			roundRect(PITCH.x, PITCH.y, PITCH.width, PITCH.height, 24);
+			ctx.clip();
+			ctx.fillStyle = isRed
+				? `rgba(229,57,53,${0.08 + pulse * 0.09})`
+				: `rgba(230,168,23,${0.055 + pulse * 0.065})`;
+			ctx.fillRect(PITCH.x, PITCH.y, PITCH.width, PITCH.height);
+			ctx.restore();
+		}
 		const glow = ctx.createRadialGradient(owner.x, owner.y, 35, owner.x, owner.y, 360);
-		const yellow = state.ownerHits < OWNER_LIMITS.vexStart;
+		const yellow = reaction.tone !== 'red';
 		glow.addColorStop(
 			0,
 			yellow ? `rgba(230,168,23,${0.2 + intensity * 0.25})` : `rgba(229,57,53,${0.24 + intensity * 0.3})`
@@ -1198,28 +1672,36 @@ const gameSchema = {
 	function drawGoals() {
 		ctx.strokeStyle = 'rgba(248,248,250,0.58)';
 		ctx.lineWidth = 5;
-		ctx.strokeRect(goalLeft(), PITCH.y - GOAL.depth, GOAL.width, GOAL.depth);
-		ctx.strokeRect(goalLeft(), PITCH.y + PITCH.height, GOAL.width, GOAL.depth);
+		ctx.strokeRect(goalLeft(), FIELD.y - GOAL.depth, GOAL.width, GOAL.depth);
+		ctx.strokeRect(goalLeft(), FIELD.y + FIELD.height, GOAL.width, GOAL.depth);
 	}
 
 	function drawCap(cap) {
 		const selected = cap === state.selectedCap;
+		const isOwner = cap.owner && ownerRuleActive();
 		ctx.save();
-		ctx.shadowColor = selected ? '#FBE9B8' : cap.owner ? ownerGlowColor() : 'rgba(0,0,0,0.36)';
-		ctx.shadowBlur = selected ? 24 : cap.owner ? 20 : 10;
+		ctx.shadowColor = selected ? '#FBE9B8' : isOwner ? ownerGlowColor() : 'rgba(0,0,0,0.36)';
+		ctx.shadowBlur = selected ? 24 : isOwner ? 20 : 10;
 		ctx.beginPath();
 		ctx.arc(cap.x, cap.y, cap.r, 0, Math.PI * 2);
-		ctx.fillStyle = cap.owner ? '#E6A817' : cap.color;
+		ctx.fillStyle = isOwner ? '#E6A817' : cap.color;
 		ctx.fill();
-		ctx.lineWidth = cap.owner ? 5 : 4;
+		ctx.lineWidth = isOwner ? 5 : 4;
 		ctx.strokeStyle = cap.side === 'player' ? 'rgba(248,248,250,0.74)' : 'rgba(229,211,244,0.74)';
 		ctx.stroke();
 		ctx.shadowBlur = 0;
-		ctx.fillStyle = cap.owner ? '#171717' : '#F8F8FA';
+		if (selected) {
+			ctx.beginPath();
+			ctx.arc(cap.x, cap.y, cap.r + 9, 0, Math.PI * 2);
+			ctx.lineWidth = 4;
+			ctx.strokeStyle = '#FBE9B8';
+			ctx.stroke();
+		}
+		ctx.fillStyle = isOwner ? '#171717' : '#F8F8FA';
 		ctx.font = '800 20px Open Sans, sans-serif';
 		ctx.textAlign = 'center';
 		ctx.textBaseline = 'middle';
-		ctx.fillText(cap.role === 'keeper' ? 'K' : cap.owner ? 'O' : cap.side === 'player' ? 'Y' : 'C', cap.x, cap.y);
+		ctx.fillText(cap.role === 'keeper' ? 'K' : isOwner ? 'O' : cap.side === 'player' ? 'Y' : 'C', cap.x, cap.y);
 		ctx.restore();
 	}
 
@@ -1240,23 +1722,83 @@ const gameSchema = {
 	function drawAim() {
 		if (!state.dragging || !state.selectedCap || !state.dragPoint) return;
 		const cap = state.selectedCap;
-		const drag = clampVector({ x: cap.x - state.dragPoint.x, y: cap.y - state.dragPoint.y }, PHYSICS.maxDrag);
-		const power = Math.min(1, Math.hypot(drag.x, drag.y) / PHYSICS.maxDrag);
+		const physics = currentMode().physics;
+		const drag = clampVector({ x: cap.x - state.dragPoint.x, y: cap.y - state.dragPoint.y }, physics.maxDrag);
+		const aim = analyzeAim({
+			cap,
+			drag,
+			ball,
+			obstacles: bodies,
+			maxDrag: physics.maxDrag,
+			bounds: FIELD,
+			friction: physics.friction,
+			powerScale: physics.powerScale,
+			restSpeed: physics.restSpeed,
+		});
+		if (aim.status === 'idle') return;
+		const invalidKeeper = isInvalidKeeperFlick(cap, drag);
+		const blocked = aim.status === 'blocked';
+		const tooWeak = aim.status === 'short';
+		const color = invalidKeeper || blocked || tooWeak ? '#FF6B64' : aim.willContactBall ? '#F2A900' : '#FBE9B8';
+		const statusLabel = invalidKeeper
+			? 'KEEPER: RECOVER ONLY'
+			: tooWeak
+				? 'MORE POWER NEEDED'
+				: aim.willContactBall
+					? 'BALL CONTACT'
+					: blocked
+						? 'PLAYER BLOCKING'
+						: 'OPEN FLICK';
+		const startX = cap.x + aim.direction.x * (cap.r + 12);
+		const startY = cap.y + aim.direction.y * (cap.r + 12);
 		ctx.save();
-		ctx.strokeStyle = '#FBE9B8';
-		ctx.lineWidth = 5;
+		ctx.strokeStyle = color;
+		ctx.lineWidth = 6;
 		ctx.lineCap = 'round';
-		ctx.setLineDash([12, 10]);
+		ctx.setLineDash(invalidKeeper || blocked || tooWeak ? [8, 9] : [15, 10]);
 		ctx.beginPath();
-		ctx.moveTo(cap.x, cap.y);
-		ctx.lineTo(cap.x + drag.x * 1.35, cap.y + drag.y * 1.35);
+		ctx.moveTo(startX, startY);
+		ctx.lineTo(aim.guideEnd.x, aim.guideEnd.y);
 		ctx.stroke();
 		ctx.setLineDash([]);
-		ctx.fillStyle = 'rgba(18,18,18,0.8)';
-		roundRect(cap.x - 50, cap.y + cap.r + 16, 100, 14, 999);
+
+		const arrowAngle = Math.atan2(aim.direction.y, aim.direction.x);
+		ctx.fillStyle = color;
+		ctx.beginPath();
+		ctx.moveTo(aim.guideEnd.x, aim.guideEnd.y);
+		ctx.lineTo(aim.guideEnd.x - Math.cos(arrowAngle - 0.55) * 18, aim.guideEnd.y - Math.sin(arrowAngle - 0.55) * 18);
+		ctx.lineTo(aim.guideEnd.x - Math.cos(arrowAngle + 0.55) * 18, aim.guideEnd.y - Math.sin(arrowAngle + 0.55) * 18);
+		ctx.closePath();
 		ctx.fill();
-		ctx.fillStyle = '#F2A900';
-		roundRect(cap.x - 48, cap.y + cap.r + 18, 96 * power, 10, 999);
+
+		if (aim.contactPoint) {
+			ctx.beginPath();
+			ctx.arc(aim.contactPoint.x, aim.contactPoint.y, 9, 0, Math.PI * 2);
+			ctx.fillStyle = color;
+			ctx.fill();
+			ctx.beginPath();
+			ctx.arc(aim.firstCollision.target.x, aim.firstCollision.target.y, aim.firstCollision.target.r + 8, 0, Math.PI * 2);
+			ctx.lineWidth = 4;
+			ctx.strokeStyle = color;
+			ctx.stroke();
+		}
+
+		const panelWidth = 220;
+		const panelX = Math.max(PITCH.x + 8, Math.min(PITCH.x + PITCH.width - panelWidth - 8, cap.x - panelWidth / 2));
+		const panelY = cap.y > PITCH.y + PITCH.height * 0.72 ? cap.y - cap.r - 82 : cap.y + cap.r + 20;
+		ctx.fillStyle = 'rgba(18,18,18,0.9)';
+		roundRect(panelX, panelY, panelWidth, 60, 14);
+		ctx.fill();
+		ctx.fillStyle = color;
+		ctx.font = '800 16px Open Sans, sans-serif';
+		ctx.textAlign = 'center';
+		ctx.textBaseline = 'middle';
+		ctx.fillText(`${statusLabel} · ${Math.round(aim.power * 100)}%`, panelX + panelWidth / 2, panelY + 19);
+		ctx.fillStyle = 'rgba(248,248,250,0.16)';
+		roundRect(panelX + 14, panelY + 40, panelWidth - 28, 9, 999);
+		ctx.fill();
+		ctx.fillStyle = color;
+		roundRect(panelX + 14, panelY + 40, (panelWidth - 28) * aim.power, 9, 999);
 		ctx.fill();
 		ctx.restore();
 	}
@@ -1288,25 +1830,14 @@ const gameSchema = {
 	}
 
 	function updateHud() {
+		const mode = currentMode();
 		if (playerScoreEl) playerScoreEl.textContent = String(state.playerScore);
 		if (cpuScoreEl) cpuScoreEl.textContent = String(state.cpuScore);
 		if (timeEl) timeEl.textContent = String(Math.max(0, Math.ceil(state.remaining)));
-		if (recordEl) recordEl.textContent = String(state.records.bestStreak);
-		if (difficultyPill) difficultyPill.textContent = difficultyLabel();
-		if (turnPill) {
-			turnPill.textContent =
-				state.turn === 'player' ? 'Your turn' : state.turn === 'cpu' ? 'Computer turn' : 'Ball moving';
-		}
-		if (ownerPill) {
-			ownerPill.textContent =
-				state.ownerHits >= OWNER_LIMITS.vexStart
-					? 'Owner vexed'
-					: state.ownerHits >= OWNER_LIMITS.warnStart
-						? 'Owner warning'
-						: 'Owner calm';
-		}
+		if (startButton) startButton.textContent = 'Start match';
+		if (matchLengthEl) matchLengthEl.textContent = `${mode.matchSeconds}s`;
+		if (goalTargetEl) goalTargetEl.textContent = `First ${mode.goalTarget}`;
 		if (muteButton) muteButton.setAttribute('aria-pressed', String(state.muted));
-		if (muteLabel) muteLabel.textContent = state.muted ? 'Muted' : 'Sound on';
 	}
 
 	function showToast(message) {
@@ -1366,7 +1897,8 @@ const gameSchema = {
 		state.muted = !state.muted;
 		writeMuted(state.muted);
 		if (state.muted) {
-			if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+			stopCommentary();
+			stopCelebration();
 			setAmbienceVolume(0);
 		} else {
 			setAmbienceVolume(AMBIENCE.volume);
@@ -1390,15 +1922,31 @@ const gameSchema = {
 		if (AMBIENCE.url) {
 			const audio = new Audio(AMBIENCE.url);
 			audio.loop = true;
+			audio.preload = 'auto';
 			audio.volume = AMBIENCE.volume;
-			audio.play().catch(() => {});
 			state.audio.ambienceAudio = audio;
+			audio.play().catch(() => {
+				if (state.audio.ambienceAudio === audio) state.audio.ambienceAudio = null;
+				startGeneratedAmbience();
+			});
+			audio.addEventListener(
+				'error',
+				() => {
+					if (state.audio.ambienceAudio === audio) state.audio.ambienceAudio = null;
+					startGeneratedAmbience();
+				},
+				{ once: true }
+			);
 			return;
 		}
+		startGeneratedAmbience();
+	}
+
+	function startGeneratedAmbience() {
+		if (state.muted || state.audio.ambience || state.audio.ambienceAudio) return;
 		try {
-			const AudioContext = window.AudioContext || window.webkitAudioContext;
-			if (!AudioContext) return;
-			const audioCtx = new AudioContext();
+			const audioCtx = createAudioContext();
+			if (!audioCtx) return;
 			const bufferSize = audioCtx.sampleRate * 2;
 			const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
 			const data = buffer.getChannelData(0);
@@ -1442,7 +1990,7 @@ const gameSchema = {
 
 	function duckAmbience(seconds = 1.4) {
 		state.audio.duckTimer = seconds;
-		setAmbienceVolume(0.1);
+		setAmbienceVolume(AMBIENCE.volume);
 	}
 
 	function setAmbienceVolume(volume) {
@@ -1450,35 +1998,204 @@ const gameSchema = {
 		if (state.audio.ambienceAudio) state.audio.ambienceAudio.volume = volume;
 	}
 
+	function createAudioContext() {
+		const audioWindow = window as Window & { webkitAudioContext?: typeof AudioContext };
+		const AudioContextCtor = audioWindow.AudioContext || audioWindow.webkitAudioContext;
+		if (!AudioContextCtor) return null;
+		return new AudioContextCtor();
+	}
+
+	function getSfxContext() {
+		const existing = state.audio.sfxCtx || state.audio.ctx;
+		if (existing) {
+			if (existing.state === 'suspended') existing.resume().catch(() => {});
+			return existing;
+		}
+		try {
+			const audioCtx = createAudioContext();
+			if (!audioCtx) return null;
+			state.audio.sfxCtx = audioCtx;
+			return audioCtx;
+		} catch {
+			return null;
+		}
+	}
+
+	function playFlickSound(speed) {
+		if (state.muted || !state.audioReady) return;
+		const audioCtx = getSfxContext();
+		if (!audioCtx) return;
+		const intensity = clamp(
+			(speed - FLICK_SOUND.minSpeed) / (FLICK_SOUND.maxSpeed - FLICK_SOUND.minSpeed),
+			0,
+			1
+		);
+		const now = audioCtx.currentTime;
+		const duration = FLICK_SOUND.duration + intensity * 0.04;
+		const output = audioCtx.createGain();
+		const bite = audioCtx.createOscillator();
+		const body = audioCtx.createOscillator();
+		const biteFilter = audioCtx.createBiquadFilter();
+
+		output.gain.setValueAtTime(0.0001, now);
+		output.gain.exponentialRampToValueAtTime(FLICK_SOUND.volume * (0.45 + intensity * 0.55), now + 0.008);
+		output.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+
+		bite.type = 'triangle';
+		bite.frequency.setValueAtTime(360 + intensity * 320, now);
+		bite.frequency.exponentialRampToValueAtTime(120 + intensity * 80, now + duration);
+
+		body.type = 'sine';
+		body.frequency.setValueAtTime(90 + intensity * 70, now);
+		body.frequency.exponentialRampToValueAtTime(45 + intensity * 20, now + duration);
+
+		biteFilter.type = 'bandpass';
+		biteFilter.frequency.value = 820 + intensity * 380;
+		biteFilter.Q.value = 1.8;
+
+		bite.connect(biteFilter);
+		biteFilter.connect(output);
+		body.connect(output);
+		output.connect(audioCtx.destination);
+
+		bite.start(now);
+		body.start(now);
+		bite.stop(now + duration);
+		body.stop(now + duration);
+	}
+
 	function playCommentary(eventName) {
 		if (state.muted || !state.audioReady) return;
 		const item = COMMENTARY[eventName];
 		if (!item) return;
-		duckAmbience();
-		const priority = ['goal', 'owner_collect', 'full_time', 'owner_vex'];
-		if ('speechSynthesis' in window && priority.includes(eventName)) {
-			window.speechSynthesis.cancel();
-		} else if ('speechSynthesis' in window && window.speechSynthesis.speaking) {
+		const now = performance.now();
+		if (state.audio.lastCommentaryEvent === eventName && now - state.audio.lastCommentaryAt < 1800) return;
+		const recordedCommentaryPlaying = Boolean(
+			state.audio.commentaryAudio && !state.audio.commentaryAudio.paused && !state.audio.commentaryAudio.ended
+		);
+		const speechPlaying = Boolean('speechSynthesis' in window && window.speechSynthesis.speaking);
+		const isActive = recordedCommentaryPlaying || speechPlaying;
+		if (
+			!shouldInterruptCommentary({
+				nextEvent: eventName,
+				activePriority: state.audio.commentaryPriority,
+				isActive,
+			})
+		) {
 			return;
 		}
+		if (isActive) stopCommentary();
+		const token = state.audio.commentaryToken + 1;
+		state.audio.commentaryToken = token;
+		state.audio.commentaryPriority = commentaryPriority(eventName);
+		state.audio.lastCommentaryEvent = eventName;
+		state.audio.lastCommentaryAt = now;
+		duckAmbience(item.clips.length ? 4.5 : 2.6);
+		if (state.audio.celebrationAudio) state.audio.celebrationAudio.volume = 0.22;
 		if (item.clips.length) {
 			const audio = new Audio(randomFrom(item.clips));
-			audio.volume = 0.9;
-			audio.play().catch(() => {});
+			audio.volume = item.volume ?? 0.82;
+			state.audio.commentaryAudio = audio;
+			audio.addEventListener('loadedmetadata', () => duckAmbience(audio.duration + 0.45), { once: true });
+			let usedFallback = false;
+			const fallback = () => {
+				if (usedFallback) return;
+				usedFallback = true;
+				if (state.audio.commentaryAudio === audio) state.audio.commentaryAudio = null;
+				speakCommentaryLine(item, token);
+			};
+			audio.addEventListener(
+				'ended',
+				() => {
+					if (state.audio.commentaryAudio !== audio) return;
+					state.audio.commentaryAudio = null;
+					if (state.audio.commentaryToken === token) state.audio.commentaryPriority = 0;
+				},
+				{ once: true }
+			);
+			audio.addEventListener('error', fallback, { once: true });
+			audio.play().catch(fallback);
 			return;
 		}
-		if (!('speechSynthesis' in window) || !item.lines.length) return;
+		speakCommentaryLine(item, token);
+	}
+
+	function queueCommentaryAfterCelebration(eventName) {
+		const celebrationPlaying = Boolean(
+			state.audio.celebrationAudio && !state.audio.celebrationAudio.paused && !state.audio.celebrationAudio.ended
+		);
+		if (!celebrationPlaying) {
+			playCommentary(eventName);
+			return;
+		}
+		state.audio.pendingCommentary = eventName;
+	}
+
+	function playGoalCelebration() {
+		if (state.muted || !state.audioReady) return;
+		stopCelebration();
+		duckAmbience(4.6);
+		const audio = new Audio('/audio/kanter-ball/goal-celebration.m4a');
+		audio.volume = 0.9;
+		state.audio.celebrationAudio = audio;
+		audio.addEventListener('ended', () => finishCelebration(audio), { once: true });
+		audio.play().catch(() => finishCelebration(audio));
+	}
+
+	function finishCelebration(audio) {
+		if (state.audio.celebrationAudio !== audio) return;
+		state.audio.celebrationAudio = null;
+		const pending = state.audio.pendingCommentary;
+		state.audio.pendingCommentary = null;
+		if (pending) playCommentary(pending);
+	}
+
+	function stopCelebration() {
+		if (state.audio.celebrationAudio) {
+			state.audio.celebrationAudio.pause();
+			state.audio.celebrationAudio.currentTime = 0;
+			state.audio.celebrationAudio = null;
+		}
+		state.audio.pendingCommentary = null;
+	}
+
+	function stopCommentary() {
+		state.audio.commentaryToken += 1;
+		state.audio.commentaryPriority = 0;
+		if (state.audio.commentaryAudio) {
+			state.audio.commentaryAudio.pause();
+			state.audio.commentaryAudio.currentTime = 0;
+			state.audio.commentaryAudio = null;
+		}
+		if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+	}
+
+	function speakCommentaryLine(item, token) {
+		if (!('speechSynthesis' in window) || !item.lines.length) {
+			if (state.audio.commentaryToken === token) state.audio.commentaryPriority = 0;
+			return;
+		}
 		const utterance = new SpeechSynthesisUtterance(randomFrom(item.lines));
 		utterance.lang = 'en-NG';
+		const voices = window.speechSynthesis.getVoices();
+		utterance.voice =
+			voices.find((voice) => voice.lang.toLowerCase() === 'en-ng') ||
+			voices.find((voice) => voice.lang.toLowerCase().startsWith('en-ng')) ||
+			null;
 		utterance.rate = 1;
 		utterance.pitch = 1;
-		utterance.volume = 0.95;
+		utterance.volume = 0.88;
+		const finish = () => {
+			if (state.audio.commentaryToken === token) state.audio.commentaryPriority = 0;
+		};
+		utterance.addEventListener('end', finish, { once: true });
+		utterance.addEventListener('error', finish, { once: true });
 		window.speechSynthesis.speak(utterance);
 	}
 
 	async function shareResult() {
 		const url = new URL('/kanter-ball', window.location.origin).href;
-		const text = `I beat the computer ${state.playerScore}-${state.cpuScore} on ${difficultyLabel()} in Sportykore Kanter Ball. You try: ${url}`;
+		const text = `I played the computer ${state.playerScore}-${state.cpuScore} on ${rulesLabel()} · ${difficultyLabel()} in Sportykore Kanter Ball. You try: ${url}`;
 		track('share_click', currentResultData('share'));
 		if (navigator.share) {
 			try {
@@ -1501,9 +2218,15 @@ const gameSchema = {
 
 	function track(name, data = {}) {
 		try {
-			if (typeof window.va === 'function') window.va('event', name, data);
-			if (typeof window.sportykoreAnalytics?.track === 'function') window.sportykoreAnalytics.track(name, data);
-			if (typeof window.analytics?.track === 'function') window.analytics.track(name, data);
+			const analyticsWindow =
+				/** @type {Window & { va?: (type: string, name: string, data: object) => void; sportykoreAnalytics?: { track?: (name: string, data: object) => void }; analytics?: { track?: (name: string, data: object) => void } }} */ (
+					window
+				);
+			if (typeof analyticsWindow.va === 'function') analyticsWindow.va('event', name, data);
+			if (typeof analyticsWindow.sportykoreAnalytics?.track === 'function') {
+				analyticsWindow.sportykoreAnalytics.track(name, data);
+			}
+			if (typeof analyticsWindow.analytics?.track === 'function') analyticsWindow.analytics.track(name, data);
 			window.dispatchEvent(new CustomEvent('sportykore:kanter-track', { detail: { name, data } }));
 		} catch {
 			// Analytics must never interrupt play.
@@ -1531,13 +2254,26 @@ const gameSchema = {
 	}
 
 	function ownerGlowColor() {
-		if (state.ownerHits >= OWNER_LIMITS.vexStart) return '#E53935';
-		if (state.ownerHits >= OWNER_LIMITS.warnStart) return '#E6A817';
+		const reaction = ownerReaction(state.ownerHits);
+		if (reaction.tone === 'red') return '#E53935';
+		if (reaction.tone === 'yellow') return '#E6A817';
 		return 'rgba(251,233,184,0.72)';
 	}
 
 	function difficultyLabel() {
 		return DIFFICULTIES[state.difficulty].label;
+	}
+
+	function rulesLabel() {
+		return currentMode().label;
+	}
+
+	function currentMode() {
+		return modeProfile(state.rulesMode);
+	}
+
+	function ownerRuleActive() {
+		return currentMode().ownerRule;
 	}
 
 	function closestTo(items, point) {
