@@ -57,18 +57,32 @@ const gameSchema = {
 							</strong>
 							<span><span data-time>90</span>s</span>
 						</div>
-						<button class="kanter-icon-button" type="button" data-mute aria-pressed="false" aria-label="Toggle sound">
-							<svg class="kanter-sound-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-								<path d="M11 5 6 9H3v6h3l5 4V5Z"></path>
-								<path d="M15.5 8.5a5 5 0 0 1 0 7"></path>
-								<path d="M18.5 5.5a9 9 0 0 1 0 13"></path>
-							</svg>
-							<svg class="kanter-sound-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-								<path d="M11 5 6 9H3v6h3l5 4V5Z"></path>
-								<path d="m16 9 5 5"></path>
-								<path d="m21 9-5 5"></path>
-							</svg>
-						</button>
+						<div class="kanter-audio-controls">
+							<button class="kanter-icon-button" type="button" data-mute aria-pressed="false" aria-label="Toggle match sounds">
+								<svg class="kanter-sound-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+									<path d="M11 5 6 9H3v6h3l5 4V5Z"></path>
+									<path d="M15.5 8.5a5 5 0 0 1 0 7"></path>
+									<path d="M18.5 5.5a9 9 0 0 1 0 13"></path>
+								</svg>
+								<svg class="kanter-sound-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+									<path d="M11 5 6 9H3v6h3l5 4V5Z"></path>
+									<path d="m16 9 5 5"></path>
+									<path d="m21 9-5 5"></path>
+								</svg>
+							</button>
+							<button class="kanter-icon-button" type="button" data-music aria-pressed="false" aria-label="Toggle music">
+								<svg class="kanter-music-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+									<path d="M9 18V5l12-2v13"></path>
+									<circle cx="6" cy="18" r="3"></circle>
+									<circle cx="18" cy="16" r="3"></circle>
+								</svg>
+								<svg class="kanter-music-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+									<path d="M9 18V5l12-2v13"></path>
+									<circle cx="6" cy="18" r="3"></circle>
+									<path d="m3 3 18 18"></path>
+								</svg>
+							</button>
+						</div>
 						<div class="kanter-team kanter-team-away">
 							<span class="kanter-team-mark" aria-hidden="true">C</span>
 							<span>CPU</span>
@@ -260,7 +274,7 @@ const gameSchema = {
 	.kanter-team-away {
 		justify-content: flex-end;
 		color: var(--gold-soft);
-		padding-right: 3.9rem;
+		padding-right: 6.35rem;
 		text-align: right;
 	}
 
@@ -314,11 +328,16 @@ const gameSchema = {
 		padding: 0.26rem 0.5rem;
 	}
 
-	.kanter-icon-button {
+	.kanter-audio-controls {
 		position: absolute;
 		top: 0.7rem;
 		right: 0.7rem;
 		z-index: 1;
+		display: flex;
+		gap: 0.35rem;
+	}
+
+	.kanter-icon-button {
 		display: inline-flex;
 		width: 2.25rem;
 		height: 2.25rem;
@@ -341,11 +360,14 @@ const gameSchema = {
 	}
 
 	.kanter-icon-button .kanter-sound-off,
-	.kanter-icon-button[aria-pressed="true"] .kanter-sound-on {
+	.kanter-icon-button .kanter-music-off,
+	.kanter-icon-button[aria-pressed="true"] .kanter-sound-on,
+	.kanter-icon-button[aria-pressed="true"] .kanter-music-on {
 		display: none;
 	}
 
-	.kanter-icon-button[aria-pressed="true"] .kanter-sound-off {
+	.kanter-icon-button[aria-pressed="true"] .kanter-sound-off,
+	.kanter-icon-button[aria-pressed="true"] .kanter-music-off {
 		display: block;
 	}
 
@@ -645,7 +667,7 @@ const gameSchema = {
 
 <script>
 import { analyzeAim, selectionRadius } from '../lib/kanter-ball/aim.js';
-import { commentaryPriority, shouldInterruptCommentary } from '../lib/kanter-ball/audio.js';
+import { commentaryPriority } from '../lib/kanter-ball/audio.js';
 import { cpuThinkDelay, planCpuTurn } from '../lib/kanter-ball/cpu.js';
 import {
 	isBallInKeeperDanger,
@@ -653,7 +675,7 @@ import {
 	nextKeeperRecoveryPosition,
 } from '../lib/kanter-ball/keeper.js';
 import { modeProfile } from '../lib/kanter-ball/modes.js';
-import { OWNER_COMMENTARY, ownerReaction, OWNER_LIMITS } from '../lib/kanter-ball/owner.js';
+import { ownerReaction, OWNER_LIMITS } from '../lib/kanter-ball/owner.js';
 import { advanceMatchClock, crossedCountdownThreshold } from '../lib/kanter-ball/pacing.js';
 import { collisionGeometry, lastTouchAfterCollision } from '../lib/kanter-ball/physics.js';
 import { classifyGoal } from '../lib/kanter-ball/scoring.js';
@@ -683,6 +705,7 @@ import {
 	const rematchButton = document.querySelector('[data-rematch]');
 	const shareButton = document.querySelector('[data-share]');
 	const muteButton = document.querySelector('[data-mute]');
+	const musicButton = document.querySelector('[data-music]');
 	const toastEl = document.querySelector('[data-toast]');
 	const flashEl = document.querySelector('[data-flash]');
 	const endKicker = document.querySelector('[data-end-kicker]');
@@ -695,6 +718,7 @@ import {
 	const goalTargetEl = document.querySelector('[data-goal-target]');
 
 	const MUTE_KEY = 'sportykore:kanter-ball:mute';
+	const MUSIC_MUTE_KEY = 'sportykore:kanter-ball:music-muted';
 	const RECORDS_KEY = 'sportykore:kanter-ball:records';
 	const WORLD = { width: 720, height: 980 };
 	const PITCH = { x: 48, y: 58, width: 624, height: 864 };
@@ -713,39 +737,61 @@ import {
 			label: 'Hard',
 		},
 	};
-	/** @type {Record<string, { lines: string[]; clips: string[]; volume?: number }>} */
+	/** @type {Record<string, { clips: string[]; volume?: number }>} */
 	const COMMENTARY = {
-		kickoff: { lines: ['Make we start!', 'Game don start oo'], clips: [] },
-		goal: { lines: ['Goooal!', 'Na goal be that!', 'Sweet finish!'], clips: [] },
-		own_goal_player: { lines: ['Own goal! Dem score themselves!'], clips: [] },
-		own_goal_cpu: { lines: ['Own goal! You put am for your own net!'], clips: [] },
-		near_miss: { lines: ['Ah! Close one', 'Bad luck'], clips: [] },
-		save: { lines: ['Keeper save am!', 'No entry!'], clips: [] },
-		owner_1: { lines: [OWNER_COMMENTARY.owner_1], clips: ['/audio/kanter-ball/owner-alert.m4a'] },
-		owner_2: { lines: [OWNER_COMMENTARY.owner_2], clips: ['/audio/kanter-ball/owner-warning.m4a'] },
-		owner_vex: { lines: [OWNER_COMMENTARY.owner_vex], clips: ['/audio/kanter-ball/owner-vexed.m4a'] },
-		owner_warn: { lines: [OWNER_COMMENTARY.owner_warn], clips: [] },
-		owner_collect: { lines: [OWNER_COMMENTARY.owner_collect], clips: ['/audio/kanter-ball/owner-collect.m4a'] },
+		kickoff: { clips: ['/audio/kanter-ball/Match starts.aac', '/audio/kanter-ball/match begins.aac'], volume: 0.84 },
+		goal: { clips: ['/audio/kanter-ball/Player scores .aac'], volume: 0.86 },
+		own_goal_player: { clips: ['/audio/kanter-ball/Player scores .aac'], volume: 0.86 },
+		own_goal_cpu: { clips: ['/audio/kanter-ball/Player scores .aac'], volume: 0.86 },
+		near_miss: {
+			clips: [
+				'/audio/kanter-ball/near miss.aac',
+				'/audio/kanter-ball/near miss 2.aac',
+				'/audio/kanter-ball/near miss 3.aac',
+				'/audio/kanter-ball/Ball just misses.aac',
+				'/audio/kanter-ball/close to score .aac',
+				'/audio/kanter-ball/what a chance.aac',
+				'/audio/kanter-ball/hits the bar.aac',
+			],
+			volume: 0.84,
+		},
+		save: {
+			clips: [
+				'/audio/kanter-ball/Keeper saves .aac',
+				'/audio/kanter-ball/keeper saves 1.aac',
+				'/audio/kanter-ball/keeper saves again.aac',
+				'/audio/kanter-ball/Keeper stops it.aac',
+			],
+			volume: 0.84,
+		},
+		goal_kick: { clips: ['/audio/kanter-ball/goalkick.aac'], volume: 0.82 },
+		owner_1: { clips: ['/audio/kanter-ball/Player hits the owners cap.aac'], volume: 0.84 },
+		owner_2: {
+			clips: ['/audio/kanter-ball/Hits the owners cap stage 2.aac', '/audio/kanter-ball/owner warning the player.aac'],
+			volume: 0.84,
+		},
+		owner_vex: { clips: ['/audio/kanter-ball/Owner now angry.aac'], volume: 0.86 },
+		owner_warn: { clips: ['/audio/kanter-ball/owner warning the player.aac'], volume: 0.84 },
+		owner_collect: { clips: ['/audio/kanter-ball/owner grabs the ball.aac'], volume: 0.88 },
 		time_low: {
-			lines: ['Time dey go oo!'],
 			clips: ['/audio/kanter-ball/clock-running-down.m4a'],
 			volume: 0.82,
 		},
 		full_time: {
-			lines: ['Time up! Good game'],
-			clips: ['/audio/kanter-ball/match-ends.m4a'],
+			clips: ['/audio/kanter-ball/match stops.aac'],
 			volume: 0.82,
 		},
 	};
 	const AMBIENCE = {
 		url: '/audio/kanter-ball/fred-background-music.m4a',
-		volume: 0.009,
+		volume: 0.01,
 	};
-	const FLICK_SOUND = {
-		volume: 0.50,
+	const FLICK_SOUNDS = {
 		minSpeed: 180,
 		maxSpeed: 1050,
-		duration: 0.13,
+		light: ['/audio/kanter-ball/back pass.aac', '/audio/kanter-ball/back pass 2.aac'],
+		medium: ['/audio/kanter-ball/forward pass.aac', '/audio/kanter-ball/through ball.aac'],
+		heavy: ['/audio/kanter-ball/Heavy shot.aac'],
 	};
 
 	type KanterBody = {
@@ -777,6 +823,7 @@ import {
 		ownerHits: 0,
 		records: readRecords(),
 		muted: readMuted(),
+		musicMuted: readMusicMuted(),
 		audioReady: false,
 		selectedCap: null as KanterBody | null,
 		dragging: false,
@@ -791,16 +838,19 @@ import {
 		restartTaker: null as KanterBody | null,
 		particles: [],
 		audio: {
-			ctx: null as AudioContext | null,
-			ambience: null as AudioBufferSourceNode | null,
-			ambienceGain: null as GainNode | null,
+			runId: 0,
 			ambienceAudio: null as HTMLAudioElement | null,
-			commentaryAudio: null as HTMLAudioElement | null,
+			foregroundAudio: null as HTMLAudioElement | null,
+			soundQueue: [] as Array<{
+				src: string;
+				volume: number;
+				priority: number;
+				eventName?: string;
+				kind: 'moment' | 'sequence' | 'terminal';
+				runId: number;
+			}>,
 			commentaryPriority: 0,
 			commentaryToken: 0,
-			pendingCommentary: null as string | null,
-			celebrationAudio: null as HTMLAudioElement | null,
-			sfxCtx: null as AudioContext | null,
 			lastCommentaryEvent: null,
 			lastCommentaryAt: 0,
 			duckTimer: 0,
@@ -826,6 +876,7 @@ import {
 	shareButton?.addEventListener('click', shareResult);
 	followLink?.addEventListener('click', () => track('waitlist_click', { target: 'x', ...currentResultData() }));
 	muteButton?.addEventListener('click', toggleMute);
+	musicButton?.addEventListener('click', toggleMusic);
 	for (const button of difficultyButtons) {
 		button.addEventListener('click', () => setDifficulty(button.getAttribute('data-difficulty') || 'medium'));
 	}
@@ -883,8 +934,7 @@ import {
 	}
 
 	function showMatchSetup() {
-		stopCommentary();
-		stopCelebration();
+		resetForegroundAudio({ stopActive: true });
 		state.mode = 'ready';
 		state.remaining = currentMode().matchSeconds;
 		state.ownerHits = 0;
@@ -898,8 +948,7 @@ import {
 
 	function startGame() {
 		unlockAudio();
-		stopCommentary();
-		stopCelebration();
+		resetForegroundAudio({ stopActive: true });
 		state.mode = 'running';
 		state.turn = 'player';
 		state.playerScore = 0;
@@ -942,8 +991,9 @@ import {
 			endCopy.textContent = `${state.playerScore}-${state.cpuScore} · ${rulesLabel()} · ${difficultyLabel()}. Best streak: ${state.records.bestStreak}.`;
 		}
 		endOverlay?.classList.add('is-visible');
-		if (reason === 'owner_collect') playCommentary('owner_collect');
-		else queueCommentaryAfterCelebration('full_time');
+		prepareTerminalAudio();
+		if (reason === 'owner_collect') playCommentary('owner_collect', { kind: 'terminal' });
+		else playCommentary('full_time', { kind: 'terminal' });
 		track('game_end', currentResultData(reason));
 		updateHud();
 	}
@@ -1357,6 +1407,7 @@ import {
 			scoreGoal(event.awardedTo);
 			return;
 		}
+		if (event.type === 'goal_kick') playCommentary('goal_kick');
 		for (const body of bodies) {
 			body.vx = 0;
 			body.vy = 0;
@@ -1550,7 +1601,7 @@ import {
 					: 'Computer scores.'
 		);
 		playGoalCelebration();
-		if (goal.ownGoal) playCommentary(side === 'player' ? 'own_goal_player' : 'own_goal_cpu');
+		queueCommentaryAfterCelebration(goal.ownGoal ? (side === 'player' ? 'own_goal_player' : 'own_goal_cpu') : 'goal');
 		updateHud();
 		if (state.playerScore >= currentMode().goalTarget || state.cpuScore >= currentMode().goalTarget) {
 			endGame('goal_target');
@@ -1784,6 +1835,9 @@ import {
 			ctx.stroke();
 		}
 
+		const landing = predictEasyBallLanding({ cap, drag, aim, physics });
+		if (landing) drawEasyLandingHint(landing);
+
 		const panelWidth = 220;
 		const panelX = Math.max(PITCH.x + 8, Math.min(PITCH.x + PITCH.width - panelWidth - 8, cap.x - panelWidth / 2));
 		const panelY = cap.y > PITCH.y + PITCH.height * 0.72 ? cap.y - cap.r - 82 : cap.y + cap.r + 20;
@@ -1800,6 +1854,52 @@ import {
 		ctx.fill();
 		ctx.fillStyle = color;
 		roundRect(panelX + 14, panelY + 40, (panelWidth - 28) * aim.power, 9, 999);
+		ctx.fill();
+		ctx.restore();
+	}
+
+	function predictEasyBallLanding({ cap, drag, aim, physics }) {
+		if (state.difficulty !== 'easy' || !aim.willContactBall || !aim.ballPath) return null;
+		const normal = aim.ballPath.direction;
+		const capVelocity = {
+			x: drag.x * physics.powerScale,
+			y: drag.y * physics.powerScale,
+		};
+		const approachSpeed = capVelocity.x * normal.x + capVelocity.y * normal.y;
+		if (!(approachSpeed > physics.restSpeed)) return null;
+		const impulse = ((1 + physics.restitution) * approachSpeed) / (1 / cap.mass + 1 / ball.mass);
+		const ballSpeed = impulse / ball.mass;
+		const stopDistance = Math.max(0, (ballSpeed * ballSpeed - physics.restSpeed * physics.restSpeed) / (2 * physics.friction));
+		const pathLimit = distance(ball, aim.ballPath.end);
+		const travel = Math.max(ball.r + 14, Math.min(stopDistance, pathLimit));
+		return {
+			x: ball.x + normal.x * travel,
+			y: ball.y + normal.y * travel,
+			start: aim.ballPath.start,
+		};
+	}
+
+	function drawEasyLandingHint(landing) {
+		ctx.save();
+		ctx.strokeStyle = 'rgba(242,169,0,0.72)';
+		ctx.fillStyle = 'rgba(242,169,0,0.18)';
+		ctx.lineWidth = 4;
+		ctx.lineCap = 'round';
+		ctx.setLineDash([10, 12]);
+		ctx.beginPath();
+		ctx.moveTo(landing.start.x, landing.start.y);
+		ctx.lineTo(landing.x, landing.y);
+		ctx.stroke();
+		ctx.setLineDash([]);
+		ctx.beginPath();
+		ctx.arc(landing.x, landing.y, 22, 0, Math.PI * 2);
+		ctx.fill();
+		ctx.lineWidth = 5;
+		ctx.strokeStyle = '#F2A900';
+		ctx.stroke();
+		ctx.beginPath();
+		ctx.arc(landing.x, landing.y, 5, 0, Math.PI * 2);
+		ctx.fillStyle = '#FBE9B8';
 		ctx.fill();
 		ctx.restore();
 	}
@@ -1839,6 +1939,7 @@ import {
 		if (matchLengthEl) matchLengthEl.textContent = `${mode.matchSeconds}s`;
 		if (goalTargetEl) goalTargetEl.textContent = `First ${mode.goalTarget}`;
 		if (muteButton) muteButton.setAttribute('aria-pressed', String(state.muted));
+		if (musicButton) musicButton.setAttribute('aria-pressed', String(state.musicMuted));
 	}
 
 	function showToast(message) {
@@ -1894,98 +1995,79 @@ import {
 		}
 	}
 
+	function readMusicMuted() {
+		try {
+			return window.localStorage.getItem(MUSIC_MUTE_KEY) === 'true';
+		} catch {
+			return false;
+		}
+	}
+
+	function writeMusicMuted(value) {
+		try {
+			window.localStorage.setItem(MUSIC_MUTE_KEY, String(value));
+		} catch {
+			// Ignore storage failures.
+		}
+	}
+
 	function toggleMute() {
 		state.muted = !state.muted;
 		writeMuted(state.muted);
-		if (state.muted) {
-			stopCommentary();
-			stopCelebration();
-			setAmbienceVolume(0);
-		} else {
-			setAmbienceVolume(AMBIENCE.volume);
+		if (state.muted) resetForegroundAudio({ stopActive: true });
+		else unlockAudio();
+		updateHud();
+	}
+
+	function toggleMusic() {
+		state.musicMuted = !state.musicMuted;
+		writeMusicMuted(state.musicMuted);
+		if (state.musicMuted) pauseMusic();
+		else {
 			unlockAudio();
+			startAmbience();
 		}
 		updateHud();
 	}
 
 	function unlockAudio() {
 		state.audioReady = true;
-		if (!state.muted) startAmbience();
-		if ('speechSynthesis' in window) {
-			const warmup = new SpeechSynthesisUtterance('');
-			warmup.volume = 0;
-			window.speechSynthesis.speak(warmup);
-		}
+		if (!state.musicMuted) startAmbience();
 	}
 
 	function startAmbience() {
-		if (state.muted || state.audio.ambience || state.audio.ambienceAudio) return;
-		if (AMBIENCE.url) {
-			const audio = new Audio(AMBIENCE.url);
-			audio.loop = true;
-			audio.preload = 'auto';
-			audio.volume = AMBIENCE.volume;
-			state.audio.ambienceAudio = audio;
-			audio.play().catch(() => {
-				if (state.audio.ambienceAudio === audio) state.audio.ambienceAudio = null;
-				startGeneratedAmbience();
-			});
-			audio.addEventListener(
-				'error',
-				() => {
-					if (state.audio.ambienceAudio === audio) state.audio.ambienceAudio = null;
-					startGeneratedAmbience();
-				},
-				{ once: true }
-			);
+		if (state.musicMuted || !AMBIENCE.url) return;
+		if (state.audio.ambienceAudio) {
+			setAmbienceVolume(AMBIENCE.volume);
+			if (state.audio.ambienceAudio.paused) state.audio.ambienceAudio.play().catch(() => {});
 			return;
 		}
-		startGeneratedAmbience();
+		const audio = new Audio(AMBIENCE.url);
+		audio.loop = true;
+		audio.preload = 'auto';
+		audio.volume = AMBIENCE.volume;
+		state.audio.ambienceAudio = audio;
+		audio.addEventListener(
+			'error',
+			() => {
+				if (state.audio.ambienceAudio === audio) state.audio.ambienceAudio = null;
+			},
+			{ once: true }
+		);
+		audio.play().catch(() => {
+			if (state.audio.ambienceAudio === audio) state.audio.ambienceAudio = null;
+		});
 	}
 
-	function startGeneratedAmbience() {
-		if (state.muted || state.audio.ambience || state.audio.ambienceAudio) return;
-		try {
-			const audioCtx = createAudioContext();
-			if (!audioCtx) return;
-			const bufferSize = audioCtx.sampleRate * 2;
-			const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
-			const data = buffer.getChannelData(0);
-			for (let i = 0; i < bufferSize; i += 1) {
-				data[i] = (Math.random() * 2 - 1) * 0.18;
-			}
-			const noise = audioCtx.createBufferSource();
-			noise.buffer = buffer;
-			noise.loop = true;
-			const filter = audioCtx.createBiquadFilter();
-			filter.type = 'lowpass';
-			filter.frequency.value = 520;
-			const swell = audioCtx.createOscillator();
-			swell.type = 'sine';
-			swell.frequency.value = 0.07;
-			const swellGain = audioCtx.createGain();
-			swellGain.gain.value = 0.04;
-			const gain = audioCtx.createGain();
-			gain.gain.value = AMBIENCE.volume;
-			noise.connect(filter);
-			filter.connect(gain);
-			swell.connect(swellGain);
-			swellGain.connect(gain.gain);
-			gain.connect(audioCtx.destination);
-			noise.start();
-			swell.start();
-			state.audio.ctx = audioCtx;
-			state.audio.ambience = noise;
-			state.audio.ambienceGain = gain;
-		} catch {
-			// Ambience is nice-to-have and should never block play.
-		}
+	function pauseMusic() {
+		if (!state.audio.ambienceAudio) return;
+		state.audio.ambienceAudio.pause();
 	}
 
 	function tickAudio(dt) {
 		if (state.audio.duckTimer > 0) {
 			state.audio.duckTimer -= dt;
-			if (state.audio.duckTimer <= 0 && !state.muted) setAmbienceVolume(AMBIENCE.volume);
+			if (state.audio.duckTimer <= 0 && !state.musicMuted) setAmbienceVolume(AMBIENCE.volume);
 		}
 	}
 
@@ -1995,203 +2077,131 @@ import {
 	}
 
 	function setAmbienceVolume(volume) {
-		if (state.audio.ambienceGain) state.audio.ambienceGain.gain.value = volume;
 		if (state.audio.ambienceAudio) state.audio.ambienceAudio.volume = volume;
-	}
-
-	function createAudioContext() {
-		const audioWindow = window as Window & { webkitAudioContext?: typeof AudioContext };
-		const AudioContextCtor = audioWindow.AudioContext || audioWindow.webkitAudioContext;
-		if (!AudioContextCtor) return null;
-		return new AudioContextCtor();
-	}
-
-	function getSfxContext() {
-		const existing = state.audio.sfxCtx || state.audio.ctx;
-		if (existing) {
-			if (existing.state === 'suspended') existing.resume().catch(() => {});
-			return existing;
-		}
-		try {
-			const audioCtx = createAudioContext();
-			if (!audioCtx) return null;
-			state.audio.sfxCtx = audioCtx;
-			return audioCtx;
-		} catch {
-			return null;
-		}
 	}
 
 	function playFlickSound(speed) {
 		if (state.muted || !state.audioReady) return;
-		const audioCtx = getSfxContext();
-		if (!audioCtx) return;
 		const intensity = clamp(
-			(speed - FLICK_SOUND.minSpeed) / (FLICK_SOUND.maxSpeed - FLICK_SOUND.minSpeed),
+			(speed - FLICK_SOUNDS.minSpeed) / (FLICK_SOUNDS.maxSpeed - FLICK_SOUNDS.minSpeed),
 			0,
 			1
 		);
-		const now = audioCtx.currentTime;
-		const duration = FLICK_SOUND.duration + intensity * 0.04;
-		const output = audioCtx.createGain();
-		const bite = audioCtx.createOscillator();
-		const body = audioCtx.createOscillator();
-		const biteFilter = audioCtx.createBiquadFilter();
-
-		output.gain.setValueAtTime(0.0001, now);
-		output.gain.exponentialRampToValueAtTime(FLICK_SOUND.volume * (0.45 + intensity * 0.55), now + 0.008);
-		output.gain.exponentialRampToValueAtTime(0.0001, now + duration);
-
-		bite.type = 'triangle';
-		bite.frequency.setValueAtTime(360 + intensity * 320, now);
-		bite.frequency.exponentialRampToValueAtTime(120 + intensity * 80, now + duration);
-
-		body.type = 'sine';
-		body.frequency.setValueAtTime(90 + intensity * 70, now);
-		body.frequency.exponentialRampToValueAtTime(45 + intensity * 20, now + duration);
-
-		biteFilter.type = 'bandpass';
-		biteFilter.frequency.value = 820 + intensity * 380;
-		biteFilter.Q.value = 1.8;
-
-		bite.connect(biteFilter);
-		biteFilter.connect(output);
-		body.connect(output);
-		output.connect(audioCtx.destination);
-
-		bite.start(now);
-		body.start(now);
-		bite.stop(now + duration);
-		body.stop(now + duration);
+		const clips = intensity > 0.76 ? FLICK_SOUNDS.heavy : intensity > 0.36 ? FLICK_SOUNDS.medium : FLICK_SOUNDS.light;
+		queueForegroundSound({
+			src: randomFrom(clips),
+			volume: 0.34 + intensity * 0.22,
+			priority: 5,
+			kind: 'moment',
+		});
 	}
 
-	function playCommentary(eventName) {
+	function playCommentary(eventName, options = {}) {
 		if (state.muted || !state.audioReady) return;
 		const item = COMMENTARY[eventName];
-		if (!item) return;
+		if (!item || !item.clips.length) return;
+		const kind = options.kind || 'moment';
+		if (state.mode === 'ended' && kind !== 'terminal') return;
 		const now = performance.now();
-		if (state.audio.lastCommentaryEvent === eventName && now - state.audio.lastCommentaryAt < 1800) return;
-		const recordedCommentaryPlaying = Boolean(
-			state.audio.commentaryAudio && !state.audio.commentaryAudio.paused && !state.audio.commentaryAudio.ended
-		);
-		const speechPlaying = Boolean('speechSynthesis' in window && window.speechSynthesis.speaking);
-		const isActive = recordedCommentaryPlaying || speechPlaying;
-		if (
-			!shouldInterruptCommentary({
-				nextEvent: eventName,
-				activePriority: state.audio.commentaryPriority,
-				isActive,
-			})
-		) {
-			return;
-		}
-		if (isActive) stopCommentary();
-		const token = state.audio.commentaryToken + 1;
-		state.audio.commentaryToken = token;
-		state.audio.commentaryPriority = commentaryPriority(eventName);
+		if (kind !== 'terminal' && state.audio.lastCommentaryEvent === eventName && now - state.audio.lastCommentaryAt < 1800) return;
 		state.audio.lastCommentaryEvent = eventName;
 		state.audio.lastCommentaryAt = now;
-		duckAmbience(item.clips.length ? 4.5 : 2.6);
-		if (state.audio.celebrationAudio) state.audio.celebrationAudio.volume = 0.22;
-		if (item.clips.length) {
-			const audio = new Audio(randomFrom(item.clips));
-			audio.volume = item.volume ?? 0.82;
-			state.audio.commentaryAudio = audio;
-			audio.addEventListener('loadedmetadata', () => duckAmbience(audio.duration + 0.45), { once: true });
-			let usedFallback = false;
-			const fallback = () => {
-				if (usedFallback) return;
-				usedFallback = true;
-				if (state.audio.commentaryAudio === audio) state.audio.commentaryAudio = null;
-				speakCommentaryLine(item, token);
-			};
-			audio.addEventListener(
-				'ended',
-				() => {
-					if (state.audio.commentaryAudio !== audio) return;
-					state.audio.commentaryAudio = null;
-					if (state.audio.commentaryToken === token) state.audio.commentaryPriority = 0;
-				},
-				{ once: true }
-			);
-			audio.addEventListener('error', fallback, { once: true });
-			audio.play().catch(fallback);
-			return;
-		}
-		speakCommentaryLine(item, token);
+		queueForegroundSound({
+			src: randomFrom(item.clips),
+			volume: item.volume ?? 0.82,
+			priority: commentaryPriority(eventName),
+			eventName,
+			kind,
+		});
 	}
 
 	function queueCommentaryAfterCelebration(eventName) {
-		const celebrationPlaying = Boolean(
-			state.audio.celebrationAudio && !state.audio.celebrationAudio.paused && !state.audio.celebrationAudio.ended
-		);
-		if (!celebrationPlaying) {
-			playCommentary(eventName);
-			return;
-		}
-		state.audio.pendingCommentary = eventName;
+		playCommentary(eventName, { kind: 'sequence' });
 	}
 
 	function playGoalCelebration() {
 		if (state.muted || !state.audioReady) return;
-		stopCelebration();
-		duckAmbience(4.6);
-		const audio = new Audio('/audio/kanter-ball/goal-celebration.m4a');
-		audio.volume = 0.9;
-		state.audio.celebrationAudio = audio;
-		audio.addEventListener('ended', () => finishCelebration(audio), { once: true });
-		audio.play().catch(() => finishCelebration(audio));
+		queueForegroundSound({
+			src: '/audio/kanter-ball/goal-celebration.m4a',
+			volume: 0.9,
+			priority: 75,
+			kind: 'sequence',
+		});
 	}
 
-	function finishCelebration(audio) {
-		if (state.audio.celebrationAudio !== audio) return;
-		state.audio.celebrationAudio = null;
-		const pending = state.audio.pendingCommentary;
-		state.audio.pendingCommentary = null;
-		if (pending) playCommentary(pending);
+	function queueForegroundSound({ src, volume, priority = 0, eventName = '', kind = 'moment' }) {
+		if (state.muted || !state.audioReady || !src) return;
+		if (state.mode === 'ended' && kind !== 'terminal') return;
+		state.audio.soundQueue.push({ src, volume, priority, eventName, kind, runId: state.audio.runId });
+		while (state.audio.soundQueue.length > 8) {
+			let dropIndex = -1;
+			for (let index = state.audio.soundQueue.length - 1; index >= 0; index -= 1) {
+				if (state.audio.soundQueue[index].kind !== 'terminal') {
+					dropIndex = index;
+					break;
+				}
+			}
+			state.audio.soundQueue.splice(dropIndex >= 0 ? dropIndex : state.audio.soundQueue.length - 1, 1);
+		}
+		playNextForegroundSound();
+	}
+
+	function playNextForegroundSound() {
+		if (state.muted || state.audio.foregroundAudio || !state.audio.soundQueue.length) return;
+		let next = null;
+		while (state.audio.soundQueue.length) {
+			const candidate = state.audio.soundQueue.shift();
+			if (!candidate) continue;
+			if (candidate.runId !== state.audio.runId) continue;
+			if (state.mode === 'ended' && candidate.kind !== 'terminal') continue;
+			next = candidate;
+			break;
+		}
+		if (!next) return;
+		const audio = new Audio(next.src);
+		audio.volume = next.volume;
+		state.audio.foregroundAudio = audio;
+		state.audio.commentaryPriority = next.priority;
+		state.audio.commentaryToken += 1;
+		audio.addEventListener('loadedmetadata', () => duckAmbience(audio.duration + 0.45), { once: true });
+		let finished = false;
+		const finish = () => {
+			if (finished || state.audio.foregroundAudio !== audio) return;
+			finished = true;
+			state.audio.foregroundAudio = null;
+			state.audio.commentaryPriority = 0;
+			playNextForegroundSound();
+		};
+		audio.addEventListener('ended', finish, { once: true });
+		audio.addEventListener('error', finish, { once: true });
+		audio.play().catch(finish);
+	}
+
+	function prepareTerminalAudio() {
+		state.audio.runId += 1;
+		state.audio.soundQueue = [];
+		state.audio.commentaryPriority = 0;
+		state.audio.commentaryToken += 1;
+	}
+
+	function resetForegroundAudio({ stopActive = true } = {}) {
+		state.audio.runId += 1;
+		state.audio.commentaryToken += 1;
+		state.audio.commentaryPriority = 0;
+		state.audio.soundQueue = [];
+		if (stopActive && state.audio.foregroundAudio) {
+			state.audio.foregroundAudio.pause();
+			state.audio.foregroundAudio.currentTime = 0;
+			state.audio.foregroundAudio = null;
+		}
 	}
 
 	function stopCelebration() {
-		if (state.audio.celebrationAudio) {
-			state.audio.celebrationAudio.pause();
-			state.audio.celebrationAudio.currentTime = 0;
-			state.audio.celebrationAudio = null;
-		}
-		state.audio.pendingCommentary = null;
+		resetForegroundAudio({ stopActive: true });
 	}
 
 	function stopCommentary() {
-		state.audio.commentaryToken += 1;
-		state.audio.commentaryPriority = 0;
-		if (state.audio.commentaryAudio) {
-			state.audio.commentaryAudio.pause();
-			state.audio.commentaryAudio.currentTime = 0;
-			state.audio.commentaryAudio = null;
-		}
-		if ('speechSynthesis' in window) window.speechSynthesis.cancel();
-	}
-
-	function speakCommentaryLine(item, token) {
-		if (!('speechSynthesis' in window) || !item.lines.length) {
-			if (state.audio.commentaryToken === token) state.audio.commentaryPriority = 0;
-			return;
-		}
-		const utterance = new SpeechSynthesisUtterance(randomFrom(item.lines));
-		utterance.lang = 'en-NG';
-		const voices = window.speechSynthesis.getVoices();
-		utterance.voice =
-			voices.find((voice) => voice.lang.toLowerCase() === 'en-ng') ||
-			voices.find((voice) => voice.lang.toLowerCase().startsWith('en-ng')) ||
-			null;
-		utterance.rate = 1;
-		utterance.pitch = 1;
-		utterance.volume = 0.88;
-		const finish = () => {
-			if (state.audio.commentaryToken === token) state.audio.commentaryPriority = 0;
-		};
-		utterance.addEventListener('end', finish, { once: true });
-		utterance.addEventListener('error', finish, { once: true });
-		window.speechSynthesis.speak(utterance);
+		resetForegroundAudio({ stopActive: true });
 	}
 
 	async function shareResult() {

@@ -1,6 +1,7 @@
 export const COMMENTARY_PRIORITY = {
 	kickoff: 10,
 	near_miss: 10,
+	goal_kick: 15,
 	save: 20,
 	goal: 30,
 	owner_1: 40,
