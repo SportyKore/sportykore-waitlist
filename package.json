@@ -12,6 +12,7 @@
     "preview": "astro preview",
     "astro": "astro",
     "og:image": "node scripts/generate-og.mjs",
+    "og:kanter": "node scripts/generate-kanter-og.mjs",
     "favicons": "node scripts/generate-favicons.mjs",
     "download:assets": "node scripts/generate-download-assets.mjs"
   },
