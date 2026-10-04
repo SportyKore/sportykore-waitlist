@@ -168,6 +168,53 @@ const softwareApplicationSchema = {
 		<!-- §5.2 Broadcast ticker (ambience) -->
 		<Ticker />
 
+		<!-- Kanter Ball campaign promo -->
+		<section class="border-b border-ink/5 bg-chalk px-5 py-14 sm:px-8 lg:py-16">
+			<div
+				class="mx-auto grid max-w-6xl grid-cols-1 items-center gap-8 lg:grid-cols-[1.05fr_0.95fr]"
+				data-reveal
+			>
+				<div class="max-w-2xl">
+					<p class="eyebrow text-purple">New web game</p>
+					<h2 class="display-2 mt-3 text-ink">Play Kanter Ball in your browser.</h2>
+					<p class="mt-4 leading-relaxed text-muted">
+						A quick 7v7 bottle-cap football match from Sportykore. Flick your caps,
+						beat the computer, and share the result with the group chat.
+					</p>
+					<div class="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
+						<a href="/kanter-ball" class="btn-cta text-base">Play Kanter Ball</a>
+						<p class="text-sm font-semibold text-muted">No login. Works on mobile.</p>
+					</div>
+				</div>
+
+				<a
+					href="/kanter-ball"
+					class="group relative block overflow-hidden rounded-2xl bg-stripe-dark p-4 text-white transition hover:-translate-y-1 hover:shadow-phone"
+					aria-label="Play Sportykore Kanter Ball"
+				>
+					<div class="rounded-[18px] border border-white/15 bg-[#1E7A40] p-4">
+						<div class="flex items-center justify-between text-xs font-bold uppercase tracking-[0.08em] text-white/70">
+							<span>Kanter Ball</span>
+							<span class="text-gold-score">Best 8</span>
+						</div>
+						<div class="relative mt-4 aspect-[5/3] overflow-hidden rounded-[14px] border-2 border-white/50 bg-[#155C32]">
+							<div class="absolute inset-x-0 top-1/2 border-t border-white/45"></div>
+							<div class="absolute left-1/2 top-1/2 h-20 w-20 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/45"></div>
+							<div class="absolute left-1/2 top-1 h-7 w-24 -translate-x-1/2 rounded-b-xl border-x-2 border-b-2 border-white/70"></div>
+							<div class="absolute bottom-8 left-1/2 h-9 w-9 -translate-x-1/2 rounded-full border-4 border-white/85 bg-[#E53935] shadow-lg"></div>
+							<div class="absolute bottom-[46%] left-1/2 h-5 w-5 -translate-x-1/2 rounded-full border-2 border-ink/40 bg-chalk shadow"></div>
+							<div class="absolute left-[58%] top-[34%] h-10 w-10 rounded-full border-4 border-white/80 bg-gold-score"></div>
+							<div class="absolute left-[42%] top-5 h-10 w-10 rounded-full border-4 border-white/80 bg-purple"></div>
+							<div class="absolute bottom-[23%] left-[45%] h-1.5 w-24 origin-left rotate-[-35deg] rounded-full bg-gold-soft/80 transition group-hover:w-32"></div>
+						</div>
+						<p class="mt-4 text-sm font-bold text-white">
+							Take turns. Hit first to 3 before the owner vexes.
+						</p>
+					</div>
+				</a>
+			</div>
+		</section>
+
 		<!-- §5.3 How it works (light) -->
 		<section id="how-it-works" class="scroll-mt-20 bg-chalk px-5 py-20 sm:px-8 lg:py-24">
 			<div class="mx-auto max-w-6xl">
