@@ -25,6 +25,7 @@
     "@fontsource/pacifico": "^5.2.7",
     "@tailwindcss/vite": "^4.3.0",
     "@vercel/analytics": "^2.0.1",
+    "@vercel/speed-insights": "^2.0.0",
     "astro": "^6.3.3",
     "googleapis": "^171.4.0",
     "tailwindcss": "^4.3.0"
