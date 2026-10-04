@@ -15,7 +15,7 @@ export const MODE_PROFILES = {
 			wallRestitution: 0.56,
 			restSpeed: 10,
 		},
-		pacing: { cpuThinkDelay: 0.32, settleDelay: 0.24, goalPause: 0.65 },
+		pacing: { cpuThinkDelay: 0.32, settleDelay: 0.24, goalPause: 5 },
 	},
 	street: {
 		label: 'Street rules',
@@ -33,7 +33,7 @@ export const MODE_PROFILES = {
 			wallRestitution: 0.78,
 			restSpeed: 11,
 		},
-		pacing: { cpuThinkDelay: 0.22, settleDelay: 0.18, goalPause: 0.55 },
+		pacing: { cpuThinkDelay: 0.22, settleDelay: 0.18, goalPause: 5 },
 	},
 };
 

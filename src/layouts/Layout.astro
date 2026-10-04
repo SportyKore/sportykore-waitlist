@@ -40,6 +40,7 @@ const canonicalUrl = new URL(pathname, siteUrl).toString();
 const ogImageUrl = new URL(ogImage, siteUrl).toString();
 const logoUrl = new URL('/favicon.ico', siteUrl).toString();
 const sitemapUrl = new URL('sitemap-index.xml', siteUrl).toString();
+const gaMeasurementId = import.meta.env.PUBLIC_GA_MEASUREMENT_ID;
 
 const organizationDescription =
 	'Sportykore digitizes grassroots football competitions with live match scoring, automatic standings, team-admin lineups, match stats, and permanent player profiles, starting in Nigeria.';
@@ -123,6 +124,21 @@ const baseStructuredData = [
 		<meta name="twitter:description" content={description} />
 		<meta name="twitter:image" content={ogImageUrl} />
 		<title>{title}</title>
+		{
+			gaMeasurementId && (
+				<>
+					<script async src={`https://www.googletagmanager.com/gtag/js?id=${gaMeasurementId}`} />
+					<script define:vars={{ gaMeasurementId }}>
+						window.dataLayer = window.dataLayer || [];
+						window.gtag = function gtag() {
+							window.dataLayer.push(arguments);
+						};
+						window.gtag('js', new Date());
+						window.gtag('config', gaMeasurementId);
+					</script>
+				</>
+			)
+		}
 		<script>
 			document.documentElement.classList.add('js');
 		</script>

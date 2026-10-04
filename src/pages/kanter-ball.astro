@@ -99,6 +99,7 @@ const gameSchema = {
 						></canvas>
 						<div class="kanter-toast" data-toast aria-live="polite"></div>
 						<div class="kanter-flash" data-flash></div>
+						<div class="kanter-goal-banner" data-goal-banner aria-hidden="true">GOAL!</div>
 
 						<div class="kanter-overlay is-visible" data-start-overlay>
 							<div class="kanter-overlay-card">
@@ -435,6 +436,48 @@ const gameSchema = {
 		animation: kanter-flash 0.45s ease-out;
 	}
 
+	.kanter-goal-banner {
+		position: absolute;
+		left: 50%;
+		top: 38%;
+		z-index: 3;
+		transform: translate(-50%, -50%) scale(0.6);
+		color: var(--gold-soft);
+		font-family: var(--font-playfair);
+		font-size: clamp(2.4rem, 1.9rem + 3vw, 4.2rem);
+		font-weight: 900;
+		letter-spacing: 0.04em;
+		text-shadow: 0 4px 22px rgba(0, 0, 0, 0.55);
+		opacity: 0;
+		pointer-events: none;
+	}
+
+	.kanter-goal-banner.is-visible {
+		animation: kanter-goal-banner 1.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+	}
+
+	@keyframes kanter-goal-banner {
+		0% {
+			opacity: 0;
+			transform: translate(-50%, -50%) scale(0.6);
+		}
+		18% {
+			opacity: 1;
+			transform: translate(-50%, -50%) scale(1.08);
+		}
+		30% {
+			transform: translate(-50%, -50%) scale(1);
+		}
+		78% {
+			opacity: 1;
+			transform: translate(-50%, -50%) scale(1);
+		}
+		100% {
+			opacity: 0;
+			transform: translate(-50%, -50%) scale(1);
+		}
+	}
+
 	.kanter-overlay {
 		position: absolute;
 		inset: 0;
@@ -657,6 +700,7 @@ const gameSchema = {
 	@media (prefers-reduced-motion: reduce) {
 		.kanter-toast,
 		.kanter-flash,
+		.kanter-goal-banner,
 		.btn-cta,
 		.btn-ghost-dark {
 			animation: none;
@@ -667,7 +711,6 @@ const gameSchema = {
 
 <script>
 import { analyzeAim, selectionRadius } from '../lib/kanter-ball/aim.js';
-import { commentaryPriority } from '../lib/kanter-ball/audio.js';
 import { cpuThinkDelay, planCpuTurn } from '../lib/kanter-ball/cpu.js';
 import {
 	isBallInKeeperDanger,
@@ -708,6 +751,7 @@ import {
 	const musicButton = document.querySelector('[data-music]');
 	const toastEl = document.querySelector('[data-toast]');
 	const flashEl = document.querySelector('[data-flash]');
+	const goalBannerEl = document.querySelector('[data-goal-banner]');
 	const endKicker = document.querySelector('[data-end-kicker]');
 	const endTitle = document.querySelector('[data-end-title]');
 	const endCopy = document.querySelector('[data-end-copy]');
@@ -782,9 +826,13 @@ import {
 			volume: 0.82,
 		},
 	};
-	const AMBIENCE = {
+	const AMBIENCE_MENU = {
 		url: '/audio/kanter-ball/fred-background-music.m4a',
-		volume: 0.01,
+		volume: 0.05,
+	};
+	const AMBIENCE_MATCH = {
+		url: '/audio/kanter-ball/stadium_noise.mp3',
+		volume: 0.16,
 	};
 	const FLICK_SOUNDS = {
 		minSpeed: 180,
@@ -792,6 +840,16 @@ import {
 		light: ['/audio/kanter-ball/back pass.aac', '/audio/kanter-ball/back pass 2.aac'],
 		medium: ['/audio/kanter-ball/forward pass.aac', '/audio/kanter-ball/through ball.aac'],
 		heavy: ['/audio/kanter-ball/Heavy shot.aac'],
+	};
+	const GOAL_SFX = {
+		netHit: { src: '/audio/kanter-ball/goal-net-hit.m4a', volume: 0.8 },
+		celebration: { src: '/audio/kanter-ball/goal-celebration.m4a', volume: 0.9 },
+	};
+	const CAP_SFX = {
+		flick: { src: '/audio/kanter-ball/cap-flick.m4a', volume: 0.5 },
+		collide: { src: '/audio/kanter-ball/cap-collide.m4a', volume: 0.55 },
+		minCollideSpeed: 140,
+		maxCollideSpeed: 900,
 	};
 
 	type KanterBody = {
@@ -831,29 +889,20 @@ import {
 		settleTimer: 0,
 		cpuThinkTimer: 0,
 		toastTimer: 0,
+		goalBannerTimer: 0,
 		goalCooldown: 0,
+		pendingKickoffTurn: null as 'player' | 'cpu' | null,
 		goalMouthStuckTurns: 0,
 		currentShot: null,
 		lastTouch: null,
 		restartTaker: null as KanterBody | null,
 		particles: [],
 		audio: {
-			runId: 0,
 			ambienceAudio: null as HTMLAudioElement | null,
+			ambienceTrackUrl: null as string | null,
 			foregroundAudio: null as HTMLAudioElement | null,
-			soundQueue: [] as Array<{
-				src: string;
-				volume: number;
-				priority: number;
-				eventName?: string;
-				kind: 'moment' | 'sequence' | 'terminal';
-				runId: number;
-			}>,
-			commentaryPriority: 0,
-			commentaryToken: 0,
-			lastCommentaryEvent: null,
-			lastCommentaryAt: 0,
 			duckTimer: 0,
+			lastCapCollideAt: 0,
 		},
 	};
 
@@ -936,6 +985,7 @@ import {
 	function showMatchSetup() {
 		resetForegroundAudio({ stopActive: true });
 		state.mode = 'ready';
+		startAmbience();
 		state.remaining = currentMode().matchSeconds;
 		state.ownerHits = 0;
 		state.dragging = false;
@@ -947,9 +997,9 @@ import {
 	}
 
 	function startGame() {
-		unlockAudio();
 		resetForegroundAudio({ stopActive: true });
 		state.mode = 'running';
+		unlockAudio();
 		state.turn = 'player';
 		state.playerScore = 0;
 		state.cpuScore = 0;
@@ -979,6 +1029,7 @@ import {
 	function endGame(reason = 'full_time') {
 		if (state.mode === 'ended') return;
 		state.mode = 'ended';
+		startAmbience();
 		state.dragging = false;
 		state.selectedCap = null;
 		const result = getResult(reason);
@@ -991,9 +1042,7 @@ import {
 			endCopy.textContent = `${state.playerScore}-${state.cpuScore} · ${rulesLabel()} · ${difficultyLabel()}. Best streak: ${state.records.bestStreak}.`;
 		}
 		endOverlay?.classList.add('is-visible');
-		prepareTerminalAudio();
-		if (reason === 'owner_collect') playCommentary('owner_collect', { kind: 'terminal' });
-		else playCommentary('full_time', { kind: 'terminal' });
+		playTerminalCommentary(reason === 'owner_collect' ? 'owner_collect' : 'full_time');
 		track('game_end', currentResultData(reason));
 		updateHud();
 	}
@@ -1197,6 +1246,19 @@ import {
 		}
 		if (state.goalCooldown > 0) {
 			state.goalCooldown -= dt;
+			updateParticles(dt);
+			if (state.toastTimer > 0) {
+				state.toastTimer -= dt;
+				if (state.toastTimer <= 0) toastEl?.classList.remove('is-visible');
+			}
+			if (state.goalBannerTimer > 0) {
+				state.goalBannerTimer -= dt;
+				if (state.goalBannerTimer <= 0) goalBannerEl?.classList.remove('is-visible');
+			}
+			if (state.goalCooldown <= 0 && state.pendingKickoffTurn) {
+				resetPositions(state.pendingKickoffTurn);
+				state.pendingKickoffTurn = null;
+			}
 			updateHud();
 			return;
 		}
@@ -1527,6 +1589,7 @@ import {
 			a.vy -= iy / a.mass;
 			b.vx += ix / b.mass;
 			b.vy += iy / b.mass;
+			if (a !== ball && b !== ball) playCapCollideSound(-speed);
 		}
 
 		if (state.currentShot) {
@@ -1591,6 +1654,9 @@ import {
 		void flashEl?.offsetWidth;
 		flashEl?.classList.add('is-active');
 		spawnParticles(ball.x, ball.y, side === 'player' ? '#E6A817' : '#E5D3F4');
+		showGoalBanner();
+		playSfx(GOAL_SFX.netHit.src, GOAL_SFX.netHit.volume);
+		playSfx(GOAL_SFX.celebration.src, GOAL_SFX.celebration.volume);
 		showToast(
 			goal.ownGoal
 				? side === 'player'
@@ -1600,15 +1666,14 @@ import {
 					? 'Goal for you!'
 					: 'Computer scores.'
 		);
-		playGoalCelebration();
-		queueCommentaryAfterCelebration(goal.ownGoal ? (side === 'player' ? 'own_goal_player' : 'own_goal_cpu') : 'goal');
+		playCommentary(goal.ownGoal ? (side === 'player' ? 'own_goal_player' : 'own_goal_cpu') : 'goal');
 		updateHud();
 		if (state.playerScore >= currentMode().goalTarget || state.cpuScore >= currentMode().goalTarget) {
 			endGame('goal_target');
 			return;
 		}
 		state.goalCooldown = currentMode().pacing.goalPause;
-		resetPositions(side === 'player' ? 'cpu' : 'player');
+		state.pendingKickoffTurn = side === 'player' ? 'cpu' : 'player';
 	}
 
 	function spawnParticles(x, y, color) {
@@ -2030,23 +2095,33 @@ import {
 		updateHud();
 	}
 
+	function currentAmbience() {
+		return state.mode === 'running' ? AMBIENCE_MATCH : AMBIENCE_MENU;
+	}
+
 	function unlockAudio() {
 		state.audioReady = true;
 		if (!state.musicMuted) startAmbience();
 	}
 
 	function startAmbience() {
-		if (state.musicMuted || !AMBIENCE.url) return;
-		if (state.audio.ambienceAudio) {
-			setAmbienceVolume(AMBIENCE.volume);
+		const track = currentAmbience();
+		if (state.musicMuted || !track.url) return;
+		if (state.audio.ambienceAudio && state.audio.ambienceTrackUrl === track.url) {
+			if (state.audio.duckTimer <= 0) setAmbienceVolume(track.volume);
 			if (state.audio.ambienceAudio.paused) state.audio.ambienceAudio.play().catch(() => {});
 			return;
 		}
-		const audio = new Audio(AMBIENCE.url);
+		if (state.audio.ambienceAudio) {
+			state.audio.ambienceAudio.pause();
+			state.audio.ambienceAudio = null;
+		}
+		const audio = new Audio(track.url);
 		audio.loop = true;
 		audio.preload = 'auto';
-		audio.volume = AMBIENCE.volume;
+		audio.volume = track.volume;
 		state.audio.ambienceAudio = audio;
+		state.audio.ambienceTrackUrl = track.url;
 		audio.addEventListener(
 			'error',
 			() => {
@@ -2067,13 +2142,13 @@ import {
 	function tickAudio(dt) {
 		if (state.audio.duckTimer > 0) {
 			state.audio.duckTimer -= dt;
-			if (state.audio.duckTimer <= 0 && !state.musicMuted) setAmbienceVolume(AMBIENCE.volume);
+			if (state.audio.duckTimer <= 0 && !state.musicMuted) setAmbienceVolume(currentAmbience().volume);
 		}
 	}
 
 	function duckAmbience(seconds = 1.4) {
 		state.audio.duckTimer = seconds;
-		setAmbienceVolume(AMBIENCE.volume);
+		setAmbienceVolume(currentAmbience().volume * 0.3);
 	}
 
 	function setAmbienceVolume(volume) {
@@ -2088,12 +2163,12 @@ import {
 			1
 		);
 		const clips = intensity > 0.76 ? FLICK_SOUNDS.heavy : intensity > 0.36 ? FLICK_SOUNDS.medium : FLICK_SOUNDS.light;
-		queueForegroundSound({
+		playForegroundSound({
 			src: randomFrom(clips),
-			volume: 0.34 + intensity * 0.22,
-			priority: 5,
+			volume: 0.52 + intensity * 0.34,
 			kind: 'moment',
 		});
+		playSfx(CAP_SFX.flick.src, CAP_SFX.flick.volume * (0.7 + intensity * 0.3));
 	}
 
 	function playCommentary(eventName, options = {}) {
@@ -2102,93 +2177,73 @@ import {
 		if (!item || !item.clips.length) return;
 		const kind = options.kind || 'moment';
 		if (state.mode === 'ended' && kind !== 'terminal') return;
-		const now = performance.now();
-		if (kind !== 'terminal' && state.audio.lastCommentaryEvent === eventName && now - state.audio.lastCommentaryAt < 1800) return;
-		state.audio.lastCommentaryEvent = eventName;
-		state.audio.lastCommentaryAt = now;
-		queueForegroundSound({
+		playForegroundSound({
 			src: randomFrom(item.clips),
 			volume: item.volume ?? 0.82,
-			priority: commentaryPriority(eventName),
-			eventName,
 			kind,
 		});
 	}
 
-	function queueCommentaryAfterCelebration(eventName) {
-		playCommentary(eventName, { kind: 'sequence' });
-	}
-
-	function playGoalCelebration() {
-		if (state.muted || !state.audioReady) return;
-		queueForegroundSound({
-			src: '/audio/kanter-ball/goal-celebration.m4a',
-			volume: 0.9,
-			priority: 75,
-			kind: 'sequence',
-		});
-	}
-
-	function queueForegroundSound({ src, volume, priority = 0, eventName = '', kind = 'moment' }) {
+	function playForegroundSound({ src, volume, kind = 'moment' }) {
 		if (state.muted || !state.audioReady || !src) return;
 		if (state.mode === 'ended' && kind !== 'terminal') return;
-		state.audio.soundQueue.push({ src, volume, priority, eventName, kind, runId: state.audio.runId });
-		while (state.audio.soundQueue.length > 8) {
-			let dropIndex = -1;
-			for (let index = state.audio.soundQueue.length - 1; index >= 0; index -= 1) {
-				if (state.audio.soundQueue[index].kind !== 'terminal') {
-					dropIndex = index;
-					break;
-				}
-			}
-			state.audio.soundQueue.splice(dropIndex >= 0 ? dropIndex : state.audio.soundQueue.length - 1, 1);
+		if (state.audio.foregroundAudio) {
+			state.audio.foregroundAudio.pause();
+			state.audio.foregroundAudio.currentTime = 0;
+			state.audio.foregroundAudio = null;
 		}
-		playNextForegroundSound();
-	}
-
-	function playNextForegroundSound() {
-		if (state.muted || state.audio.foregroundAudio || !state.audio.soundQueue.length) return;
-		let next = null;
-		while (state.audio.soundQueue.length) {
-			const candidate = state.audio.soundQueue.shift();
-			if (!candidate) continue;
-			if (candidate.runId !== state.audio.runId) continue;
-			if (state.mode === 'ended' && candidate.kind !== 'terminal') continue;
-			next = candidate;
-			break;
-		}
-		if (!next) return;
-		const audio = new Audio(next.src);
-		audio.volume = next.volume;
+		const audio = new Audio(src);
+		audio.volume = volume;
 		state.audio.foregroundAudio = audio;
-		state.audio.commentaryPriority = next.priority;
-		state.audio.commentaryToken += 1;
 		audio.addEventListener('loadedmetadata', () => duckAmbience(audio.duration + 0.45), { once: true });
 		let finished = false;
 		const finish = () => {
 			if (finished || state.audio.foregroundAudio !== audio) return;
 			finished = true;
 			state.audio.foregroundAudio = null;
-			state.audio.commentaryPriority = 0;
-			playNextForegroundSound();
 		};
 		audio.addEventListener('ended', finish, { once: true });
 		audio.addEventListener('error', finish, { once: true });
 		audio.play().catch(finish);
 	}
 
-	function prepareTerminalAudio() {
-		state.audio.runId += 1;
-		state.audio.soundQueue = [];
-		state.audio.commentaryPriority = 0;
-		state.audio.commentaryToken += 1;
+	function playSfx(src, volume = 0.85) {
+		if (state.muted || !state.audioReady || !src) return;
+		const audio = new Audio(src);
+		audio.volume = volume;
+		audio.addEventListener('loadedmetadata', () => duckAmbience(audio.duration + 0.45), { once: true });
+		audio.play().catch(() => {});
+	}
+
+	function playCapCollideSound(impactSpeed) {
+		if (impactSpeed < CAP_SFX.minCollideSpeed) return;
+		const now = performance.now();
+		if (now - state.audio.lastCapCollideAt < 90) return;
+		state.audio.lastCapCollideAt = now;
+		const intensity = clamp((impactSpeed - CAP_SFX.minCollideSpeed) / (CAP_SFX.maxCollideSpeed - CAP_SFX.minCollideSpeed), 0, 1);
+		playSfx(CAP_SFX.collide.src, CAP_SFX.collide.volume * (0.6 + intensity * 0.4));
+	}
+
+	function showGoalBanner() {
+		if (!goalBannerEl) return;
+		goalBannerEl.classList.remove('is-visible');
+		void goalBannerEl.offsetWidth;
+		goalBannerEl.classList.add('is-visible');
+		state.goalBannerTimer = 1.8;
+	}
+
+	function playTerminalCommentary(eventName) {
+		const active = state.audio.foregroundAudio;
+		if (active) {
+			const playNow = () => playCommentary(eventName, { kind: 'terminal' });
+			active.addEventListener('ended', playNow, { once: true });
+			active.addEventListener('error', playNow, { once: true });
+			return;
+		}
+		playCommentary(eventName, { kind: 'terminal' });
 	}
 
 	function resetForegroundAudio({ stopActive = true } = {}) {
-		state.audio.runId += 1;
-		state.audio.commentaryToken += 1;
-		state.audio.commentaryPriority = 0;
-		state.audio.soundQueue = [];
 		if (stopActive && state.audio.foregroundAudio) {
 			state.audio.foregroundAudio.pause();
 			state.audio.foregroundAudio.currentTime = 0;
@@ -2229,16 +2284,18 @@ import {
 
 	function track(name, data = {}) {
 		try {
+			const eventData = { feature: 'kanter_ball', ...data };
 			const analyticsWindow =
-				/** @type {Window & { va?: (type: string, name: string, data: object) => void; sportykoreAnalytics?: { track?: (name: string, data: object) => void }; analytics?: { track?: (name: string, data: object) => void } }} */ (
+				/** @type {Window & { gtag?: (command: string, name: string, data?: object) => void; va?: (type: string, name: string, data: object) => void; sportykoreAnalytics?: { track?: (name: string, data: object) => void }; analytics?: { track?: (name: string, data: object) => void } }} */ (
 					window
 				);
-			if (typeof analyticsWindow.va === 'function') analyticsWindow.va('event', name, data);
+			if (typeof analyticsWindow.gtag === 'function') analyticsWindow.gtag('event', name, eventData);
+			if (typeof analyticsWindow.va === 'function') analyticsWindow.va('event', name, eventData);
 			if (typeof analyticsWindow.sportykoreAnalytics?.track === 'function') {
-				analyticsWindow.sportykoreAnalytics.track(name, data);
+				analyticsWindow.sportykoreAnalytics.track(name, eventData);
 			}
-			if (typeof analyticsWindow.analytics?.track === 'function') analyticsWindow.analytics.track(name, data);
-			window.dispatchEvent(new CustomEvent('sportykore:kanter-track', { detail: { name, data } }));
+			if (typeof analyticsWindow.analytics?.track === 'function') analyticsWindow.analytics.track(name, eventData);
+			window.dispatchEvent(new CustomEvent('sportykore:kanter-track', { detail: { name, data: eventData } }));
 		} catch {
 			// Analytics must never interrupt play.
 		}
