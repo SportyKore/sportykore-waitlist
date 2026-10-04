@@ -637,10 +637,10 @@ import {
 	};
 	const AMBIENCE = {
 		url: '/audio/kanter-ball/fred-background-music.m4a',
-		volume: 0.04,
+		volume: 0.01,
 	};
 	const FLICK_SOUND = {
-		volume: 0.16,
+		volume: 0.50,
 		minSpeed: 180,
 		maxSpeed: 1050,
 		duration: 0.13,
@@ -1912,7 +1912,7 @@ import {
 
 	function duckAmbience(seconds = 1.4) {
 		state.audio.duckTimer = seconds;
-		setAmbienceVolume(0.1);
+		setAmbienceVolume(AMBIENCE.volume);
 	}
 
 	function setAmbienceVolume(volume) {
