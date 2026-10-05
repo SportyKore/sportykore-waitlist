@@ -106,10 +106,10 @@ const gameSchema = {
 								<p class="kanter-card-kicker">Kanter Ball</p>
 								<h2>Set match</h2>
 								<div class="kanter-rules" role="group" aria-label="Choose match rules">
-									<button type="button" data-rules="football" class="is-active">
+									<button type="button" data-rules="football">
 										<span>Football</span>
 									</button>
-									<button type="button" data-rules="street">
+									<button type="button" data-rules="street" class="is-active">
 										<span>Street</span>
 									</button>
 								</div>
@@ -764,6 +764,7 @@ import {
 	const MUTE_KEY = 'sportykore:kanter-ball:mute';
 	const MUSIC_MUTE_KEY = 'sportykore:kanter-ball:music-muted';
 	const RECORDS_KEY = 'sportykore:kanter-ball:records';
+	const SESSION_KEY = 'sportykore:kanter-ball:session-id';
 	const WORLD = { width: 720, height: 980 };
 	const PITCH = { x: 48, y: 58, width: 624, height: 864 };
 	const FIELD_INSET = 28;
@@ -870,12 +871,15 @@ import {
 	const state = {
 		mode: 'ready',
 		difficulty: 'medium',
-		rulesMode: 'football',
+		rulesMode: 'street',
 		turn: 'player',
 		playerScore: 0,
 		cpuScore: 0,
-		remaining: modeProfile('football').matchSeconds,
+		remaining: modeProfile('street').matchSeconds,
 		startedAt: 0,
+		sessionId: readSessionId(),
+		matchId: null as string | null,
+		stats: { shots: 0, saves: 0, nearMisses: 0, ownGoals: 0 },
 		lastFrame: performance.now(),
 		timeLowSpoken: false,
 		ownerHits: 0,
@@ -915,6 +919,7 @@ import {
 	resize();
 	resetPositions('player');
 	requestAnimationFrame(loop);
+	track('game_ready', { difficulty: difficultyLabel(), rules: state.rulesMode });
 
 	window.addEventListener('resize', resize);
 	startButton?.addEventListener('click', startGame);
@@ -964,21 +969,25 @@ import {
 
 	function setDifficulty(key) {
 		if (!DIFFICULTIES[key]) return;
+		const changed = state.difficulty !== key;
 		state.difficulty = key;
 		for (const button of difficultyButtons) {
 			button.classList.toggle('is-active', button.getAttribute('data-difficulty') === key);
 		}
+		if (changed) track('difficulty_change', { difficulty: key, mode: state.mode });
 		updateHud();
 	}
 
 	function setRulesMode(key) {
 		if (key !== 'football' && key !== 'street') return;
+		const changed = state.rulesMode !== key;
 		state.rulesMode = key;
 		state.ownerHits = 0;
 		if (state.mode === 'ready') state.remaining = currentMode().matchSeconds;
 		for (const button of rulesButtons) {
 			button.classList.toggle('is-active', button.getAttribute('data-rules') === key);
 		}
+		if (changed) track('rules_change', { rules: key, mode: state.mode });
 		updateHud();
 	}
 
@@ -1007,6 +1016,8 @@ import {
 		state.startedAt = performance.now();
 		state.timeLowSpoken = false;
 		state.ownerHits = 0;
+		state.matchId = genId();
+		state.stats = { shots: 0, saves: 0, nearMisses: 0, ownGoals: 0 };
 		state.selectedCap = null;
 		state.dragging = false;
 		state.dragPoint = null;
@@ -1066,6 +1077,12 @@ import {
 			rules: state.rulesMode,
 			duration: Math.max(0, Math.round((performance.now() - state.startedAt) / 1000)),
 			reason,
+			shots: state.stats.shots,
+			saves: state.stats.saves,
+			nearMisses: state.stats.nearMisses,
+			ownGoals: state.stats.ownGoals,
+			bestStreak: state.records.bestStreak,
+			currentStreak: state.records.currentStreak,
 		};
 	}
 
@@ -1184,6 +1201,7 @@ import {
 		cap.vx = drag.x * physics.powerScale;
 		cap.vy = drag.y * physics.powerScale;
 		playFlickSound(Math.hypot(cap.vx, cap.vy));
+		state.stats.shots += 1;
 		state.restartTaker = null;
 		state.currentShot = {
 			side: 'player',
@@ -1343,6 +1361,7 @@ import {
 			handleOwnerHit();
 		} else if (!shot.scored && shot.touchedBall && Math.random() < 0.12) {
 			playCommentary('near_miss');
+			state.stats.nearMisses += 1;
 		}
 		if (recoverTrappedGoalMouth()) return;
 		recoverKeepers();
@@ -1410,11 +1429,13 @@ import {
 		if (reaction.stage === 'vexed') {
 			showToast('owner of the ball don dey vex o');
 			playCommentary(reaction.commentary);
+			track('owner_vexed', { ownerHits: state.ownerHits, rules: state.rulesMode });
 			return;
 		}
 		if (reaction.stage === 'warning') {
 			showToast('na him be owner of the ball o — him go collect am');
 			playCommentary(reaction.commentary);
+			track('owner_warning', { ownerHits: state.ownerHits, rules: state.rulesMode });
 			return;
 		}
 		showToast('no vex the owner of the ball oo');
@@ -1612,6 +1633,11 @@ import {
 			}
 			if ((a === ball && b.role === 'keeper') || (b === ball && a.role === 'keeper')) {
 				playCommentary('save');
+				const keeper = a === ball ? b : a;
+				if (keeper.side !== state.currentShot.side) {
+					state.stats.saves += 1;
+					track('save_made', { keeperSide: keeper.side, shooterSide: state.currentShot.side, rules: state.rulesMode });
+				}
 			}
 		}
 	}
@@ -1650,11 +1676,21 @@ import {
 			state.cpuScore += 1;
 		}
 		if (state.currentShot) state.currentShot.scored = true;
+		if (goal.ownGoal) state.stats.ownGoals += 1;
 		flashEl?.classList.remove('is-active');
 		void flashEl?.offsetWidth;
 		flashEl?.classList.add('is-active');
 		spawnParticles(ball.x, ball.y, side === 'player' ? '#E6A817' : '#E5D3F4');
 		showGoalBanner();
+		track('goal_scored', {
+			scoringSide: side,
+			ownGoal: goal.ownGoal,
+			playerScore: state.playerScore,
+			cpuScore: state.cpuScore,
+			remaining: Math.max(0, Math.round(state.remaining)),
+			difficulty: difficultyLabel(),
+			rules: state.rulesMode,
+		});
 		playSfx(GOAL_SFX.netHit.src, GOAL_SFX.netHit.volume);
 		playSfx(GOAL_SFX.celebration.src, GOAL_SFX.celebration.volume);
 		showToast(
@@ -2044,6 +2080,22 @@ import {
 		}
 	}
 
+	function genId() {
+		return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 9)}`;
+	}
+
+	function readSessionId() {
+		try {
+			const existing = window.sessionStorage.getItem(SESSION_KEY);
+			if (existing) return existing;
+			const created = genId();
+			window.sessionStorage.setItem(SESSION_KEY, created);
+			return created;
+		} catch {
+			return genId();
+		}
+	}
+
 	function readMuted() {
 		try {
 			return window.localStorage.getItem(MUTE_KEY) === 'true';
@@ -2081,6 +2133,7 @@ import {
 		writeMuted(state.muted);
 		if (state.muted) resetForegroundAudio({ stopActive: true });
 		else unlockAudio();
+		track('mute_toggle', { muted: state.muted, mode: state.mode });
 		updateHud();
 	}
 
@@ -2092,6 +2145,7 @@ import {
 			unlockAudio();
 			startAmbience();
 		}
+		track('music_toggle', { musicMuted: state.musicMuted, mode: state.mode });
 		updateHud();
 	}
 
@@ -2284,7 +2338,12 @@ import {
 
 	function track(name, data = {}) {
 		try {
-			const eventData = { feature: 'kanter_ball', ...data };
+			const eventData = {
+				feature: 'kanter_ball',
+				session_id: state.sessionId,
+				match_id: state.matchId || '',
+				...data,
+			};
 			const analyticsWindow =
 				/** @type {Window & { gtag?: (command: string, name: string, data?: object) => void; va?: (type: string, name: string, data: object) => void; sportykoreAnalytics?: { track?: (name: string, data: object) => void }; analytics?: { track?: (name: string, data: object) => void } }} */ (
 					window
