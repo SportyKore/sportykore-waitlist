@@ -1,6 +1,6 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
-import vercel from '@astrojs/vercel';
+import cloudflare from '@astrojs/cloudflare';
 import starlight from '@astrojs/starlight';
 import tailwindcss from '@tailwindcss/vite';
 import sitemap, { ChangeFreqEnum } from '@astrojs/sitemap';
@@ -18,11 +18,7 @@ function pathnameOf(pageUrl) {
 export default defineConfig({
 	site,
 	output: 'server',
-	adapter: vercel({
-		webAnalytics: {
-			enabled: true,
-		},
-	}),
+	adapter: cloudflare(),
 	integrations: [
 		starlight({
 			title: 'Sportykore Docs',

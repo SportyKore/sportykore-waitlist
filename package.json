@@ -17,9 +17,10 @@
     "download:assets": "node scripts/generate-download-assets.mjs"
   },
   "dependencies": {
+    "@adonisjs/transmit-client": "^1.1.0",
+    "@astrojs/cloudflare": "^13.7.0",
     "@astrojs/sitemap": "^3.7.3",
     "@astrojs/starlight": "^0.40.0",
-    "@astrojs/vercel": "^10.0.7",
     "@fontsource-variable/open-sans": "^5.2.7",
     "@fontsource-variable/playfair-display": "^5.2.8",
     "@fontsource/pacifico": "^5.2.7",
@@ -28,7 +29,8 @@
     "@vercel/speed-insights": "^2.0.0",
     "astro": "^6.3.3",
     "googleapis": "^171.4.0",
-    "tailwindcss": "^4.3.0"
+    "tailwindcss": "^4.3.0",
+    "wrangler": "^4.147.0"
   },
   "devDependencies": {
     "qrcode": "^1.5.4",
