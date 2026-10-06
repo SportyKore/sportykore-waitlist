@@ -47,12 +47,7 @@ export const POST: APIRoute = async ({ request, url }) => {
 		await appendContactRow(validation.data, source);
 	} catch (error) {
 		const message = error instanceof Error ? error.message : String(error);
-		const errObj = error as { code?: unknown; response?: { status?: number; data?: unknown } };
-		console.error('Failed to append contact row:', message, {
-			code: errObj?.code,
-			status: errObj?.response?.status,
-			apiError: typeof errObj?.response?.data === 'object' ? errObj.response?.data : undefined,
-		});
+		console.error('Failed to append contact row:', message);
 
 		return json(
 			{
