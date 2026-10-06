@@ -101,6 +101,14 @@ const gameSchema = {
 						<div class="kanter-flash" data-flash></div>
 						<div class="kanter-goal-banner" data-goal-banner aria-hidden="true">GOAL!</div>
 
+						<div class="kanter-sponsor-card" data-sponsor-card aria-hidden="true">
+							<a class="kanter-sponsor-link" data-sponsor-link rel="noopener noreferrer">
+								<p class="kanter-sponsor-kicker" data-sponsor-kicker>This match is brought to you by</p>
+								<img class="kanter-sponsor-logo" data-sponsor-logo alt="" />
+								<p class="kanter-sponsor-name" data-sponsor-name></p>
+							</a>
+						</div>
+
 						<div class="kanter-overlay is-visible" data-start-overlay>
 							<div class="kanter-overlay-card">
 								<p class="kanter-card-kicker">Kanter Ball</p>
@@ -478,6 +486,74 @@ const gameSchema = {
 		}
 	}
 
+	.kanter-sponsor-card {
+		position: absolute;
+		inset: 0;
+		z-index: 5;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background:
+			linear-gradient(180deg, rgba(18, 18, 18, 0.72), rgba(18, 18, 18, 0.9)),
+			rgba(18, 18, 18, 0.6);
+		opacity: 0;
+		pointer-events: none;
+		transition:
+			opacity 0.4s ease,
+			transform 0.4s ease;
+		transform: scale(0.98);
+	}
+
+	.kanter-sponsor-card.is-visible {
+		opacity: 1;
+		transform: scale(1);
+		pointer-events: auto;
+	}
+
+	.kanter-sponsor-link {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 0.55rem;
+		padding: 1.5rem;
+		text-align: center;
+		text-decoration: none;
+		cursor: default;
+	}
+
+	.kanter-sponsor-card.has-link .kanter-sponsor-link {
+		cursor: pointer;
+	}
+
+	.kanter-sponsor-kicker {
+		margin: 0;
+		color: rgba(248, 248, 250, 0.68);
+		font-size: 0.78rem;
+		font-weight: 800;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+	}
+
+	.kanter-sponsor-logo {
+		display: none;
+		max-width: min(70vw, 220px);
+		max-height: 84px;
+		object-fit: contain;
+	}
+
+	.kanter-sponsor-card.has-logo .kanter-sponsor-logo {
+		display: block;
+	}
+
+	.kanter-sponsor-name {
+		margin: 0;
+		color: var(--gold-soft);
+		font-family: var(--font-playfair);
+		font-size: clamp(1.7rem, 1.3rem + 2vw, 2.6rem);
+		font-weight: 850;
+		letter-spacing: 0.01em;
+	}
+
 	.kanter-overlay {
 		position: absolute;
 		inset: 0;
@@ -701,6 +777,7 @@ const gameSchema = {
 		.kanter-toast,
 		.kanter-flash,
 		.kanter-goal-banner,
+		.kanter-sponsor-card,
 		.btn-cta,
 		.btn-ghost-dark {
 			animation: none;
@@ -720,6 +797,7 @@ import {
 import { modeProfile } from '../lib/kanter-ball/modes.js';
 import { ownerReaction, OWNER_LIMITS } from '../lib/kanter-ball/owner.js';
 import { advanceMatchClock, crossedCountdownThreshold } from '../lib/kanter-ball/pacing.js';
+import { getActiveSponsor } from '../lib/kanter-ball/sponsor.js';
 import { collisionGeometry, lastTouchAfterCollision } from '../lib/kanter-ball/physics.js';
 import { classifyGoal } from '../lib/kanter-ball/scoring.js';
 import {
@@ -752,6 +830,11 @@ import {
 	const toastEl = document.querySelector('[data-toast]');
 	const flashEl = document.querySelector('[data-flash]');
 	const goalBannerEl = document.querySelector('[data-goal-banner]');
+	const sponsorCardEl = document.querySelector('[data-sponsor-card]');
+	const sponsorLinkEl = document.querySelector('[data-sponsor-link]');
+	const sponsorKickerEl = document.querySelector('[data-sponsor-kicker]');
+	const sponsorLogoEl = document.querySelector('[data-sponsor-logo]');
+	const sponsorNameEl = document.querySelector('[data-sponsor-name]');
 	const endKicker = document.querySelector('[data-end-kicker]');
 	const endTitle = document.querySelector('[data-end-title]');
 	const endCopy = document.querySelector('[data-end-copy]');
@@ -852,6 +935,8 @@ import {
 		minCollideSpeed: 140,
 		maxCollideSpeed: 900,
 	};
+	const SPONSOR_DISPLAY_SECONDS = 5;
+	const SPONSOR_FADE_OUT_SECONDS = 0.5;
 
 	type KanterBody = {
 		type: string;
@@ -896,6 +981,7 @@ import {
 		goalBannerTimer: 0,
 		goalCooldown: 0,
 		pendingKickoffTurn: null as 'player' | 'cpu' | null,
+		sponsorTimer: 0,
 		goalMouthStuckTurns: 0,
 		currentShot: null,
 		lastTouch: null,
@@ -922,7 +1008,7 @@ import {
 	track('game_ready', { difficulty: difficultyLabel(), rules: state.rulesMode });
 
 	window.addEventListener('resize', resize);
-	startButton?.addEventListener('click', startGame);
+	startButton?.addEventListener('click', beginMatchIntro);
 	rematchButton?.addEventListener('click', () => {
 		track('change_match_click', currentResultData());
 		showMatchSetup();
@@ -931,6 +1017,10 @@ import {
 	followLink?.addEventListener('click', () => track('waitlist_click', { target: 'x', ...currentResultData() }));
 	muteButton?.addEventListener('click', toggleMute);
 	musicButton?.addEventListener('click', toggleMusic);
+	sponsorLinkEl?.addEventListener('click', (event) => {
+		if (!sponsorLinkEl.getAttribute('href')) event.preventDefault();
+		else track('sponsor_click', { phase: state.mode === 'intro' ? 'pre' : 'post', sponsor: sponsorNameEl?.textContent || '' });
+	});
 	for (const button of difficultyButtons) {
 		button.addEventListener('click', () => setDifficulty(button.getAttribute('data-difficulty') || 'medium'));
 	}
@@ -1005,15 +1095,14 @@ import {
 		updateHud();
 	}
 
-	function startGame() {
+	function beginMatchIntro() {
 		resetForegroundAudio({ stopActive: true });
-		state.mode = 'running';
+		state.mode = 'intro';
 		unlockAudio();
 		state.turn = 'player';
 		state.playerScore = 0;
 		state.cpuScore = 0;
 		state.remaining = currentMode().matchSeconds;
-		state.startedAt = performance.now();
 		state.timeLowSpoken = false;
 		state.ownerHits = 0;
 		state.matchId = genId();
@@ -1024,6 +1113,7 @@ import {
 		state.settleTimer = 0;
 		state.cpuThinkTimer = 0;
 		state.goalCooldown = 0;
+		state.pendingKickoffTurn = null;
 		state.goalMouthStuckTurns = 0;
 		state.lastTouch = null;
 		state.restartTaker = null;
@@ -1031,16 +1121,23 @@ import {
 		startOverlay?.classList.remove('is-visible');
 		endOverlay?.classList.remove('is-visible');
 		resetPositions('player');
-		showToast('Your turn. Drag one red cap.');
+		const sponsorShown = showSponsorCard('pre');
 		playCommentary('kickoff');
 		track('game_start', { difficulty: difficultyLabel(), rules: state.rulesMode });
+		updateHud();
+		if (!sponsorShown) completeMatchIntro();
+	}
+
+	function completeMatchIntro() {
+		state.mode = 'running';
+		state.startedAt = performance.now();
+		showToast('Your turn. Drag one red cap.');
 		updateHud();
 	}
 
 	function endGame(reason = 'full_time') {
-		if (state.mode === 'ended') return;
-		state.mode = 'ended';
-		startAmbience();
+		if (state.mode === 'outro' || state.mode === 'ended') return;
+		state.mode = 'outro';
 		state.dragging = false;
 		state.selectedCap = null;
 		const result = getResult(reason);
@@ -1052,10 +1149,17 @@ import {
 		if (endCopy) {
 			endCopy.textContent = `${state.playerScore}-${state.cpuScore} · ${rulesLabel()} · ${difficultyLabel()}. Best streak: ${state.records.bestStreak}.`;
 		}
-		endOverlay?.classList.add('is-visible');
+		const sponsorShown = showSponsorCard('post');
 		playTerminalCommentary(reason === 'owner_collect' ? 'owner_collect' : 'full_time');
 		track('game_end', currentResultData(reason));
 		updateHud();
+		if (!sponsorShown) completeMatchOutro();
+	}
+
+	function completeMatchOutro() {
+		state.mode = 'ended';
+		startAmbience();
+		endOverlay?.classList.add('is-visible');
 	}
 
 	function getResult(reason) {
@@ -1237,6 +1341,7 @@ import {
 		const dt = Math.min((now - state.lastFrame) / 1000, 0.033);
 		state.lastFrame = now;
 		if (state.mode === 'running') tickRun(dt);
+		tickSponsor(dt);
 		tickAudio(dt);
 		draw();
 		requestAnimationFrame(loop);
@@ -2150,7 +2255,8 @@ import {
 	}
 
 	function currentAmbience() {
-		return state.mode === 'running' ? AMBIENCE_MATCH : AMBIENCE_MENU;
+		const isMatchAmbience = state.mode === 'running' || state.mode === 'intro' || state.mode === 'outro';
+		return isMatchAmbience ? AMBIENCE_MATCH : AMBIENCE_MENU;
 	}
 
 	function unlockAudio() {
@@ -2284,6 +2390,59 @@ import {
 		void goalBannerEl.offsetWidth;
 		goalBannerEl.classList.add('is-visible');
 		state.goalBannerTimer = 1.8;
+	}
+
+	function showSponsorCard(phase) {
+		const sponsor = getActiveSponsor();
+		if (!sponsor || !sponsorCardEl) {
+			state.sponsorTimer = 0;
+			return false;
+		}
+		if (sponsorKickerEl) sponsorKickerEl.textContent = sponsor.message || 'This match is brought to you by';
+		if (sponsorNameEl) sponsorNameEl.textContent = sponsor.name;
+		sponsorCardEl.classList.toggle('has-logo', Boolean(sponsor.logo));
+		if (sponsorLogoEl) {
+			if (sponsor.logo) {
+				sponsorLogoEl.setAttribute('src', sponsor.logo);
+				sponsorLogoEl.setAttribute('alt', sponsor.name);
+			} else {
+				sponsorLogoEl.removeAttribute('src');
+				sponsorLogoEl.setAttribute('alt', '');
+			}
+		}
+		const hasLink = Boolean(sponsor.url);
+		sponsorCardEl.classList.toggle('has-link', hasLink);
+		if (sponsorLinkEl) {
+			if (hasLink) {
+				sponsorLinkEl.setAttribute('href', sponsor.url);
+				sponsorLinkEl.setAttribute('target', '_blank');
+			} else {
+				sponsorLinkEl.removeAttribute('href');
+				sponsorLinkEl.removeAttribute('target');
+			}
+		}
+		sponsorCardEl.setAttribute('aria-hidden', 'false');
+		sponsorCardEl.classList.add('is-visible');
+		state.sponsorTimer = SPONSOR_DISPLAY_SECONDS;
+		track('sponsor_impression', { phase, sponsor: sponsor.name });
+		return true;
+	}
+
+	function hideSponsorCard() {
+		if (!sponsorCardEl) return;
+		sponsorCardEl.classList.remove('is-visible');
+		sponsorCardEl.setAttribute('aria-hidden', 'true');
+	}
+
+	function tickSponsor(dt) {
+		if (state.sponsorTimer <= 0) return;
+		state.sponsorTimer -= dt;
+		if (state.sponsorTimer <= SPONSOR_FADE_OUT_SECONDS) hideSponsorCard();
+		if (state.sponsorTimer <= 0) {
+			state.sponsorTimer = 0;
+			if (state.mode === 'intro') completeMatchIntro();
+			else if (state.mode === 'outro') completeMatchOutro();
+		}
 	}
 
 	function playTerminalCommentary(eventName) {
