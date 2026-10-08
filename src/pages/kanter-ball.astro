@@ -1,5 +1,6 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import KanterHelp from '../components/KanterHelp.astro';
 
 export const prerender = true;
 
@@ -57,32 +58,6 @@ const gameSchema = {
 							</strong>
 							<span><span data-time>90</span>s</span>
 						</div>
-						<div class="kanter-audio-controls">
-							<button class="kanter-icon-button" type="button" data-mute aria-pressed="false" aria-label="Toggle match sounds">
-								<svg class="kanter-sound-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-									<path d="M11 5 6 9H3v6h3l5 4V5Z"></path>
-									<path d="M15.5 8.5a5 5 0 0 1 0 7"></path>
-									<path d="M18.5 5.5a9 9 0 0 1 0 13"></path>
-								</svg>
-								<svg class="kanter-sound-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-									<path d="M11 5 6 9H3v6h3l5 4V5Z"></path>
-									<path d="m16 9 5 5"></path>
-									<path d="m21 9-5 5"></path>
-								</svg>
-							</button>
-							<button class="kanter-icon-button" type="button" data-music aria-pressed="false" aria-label="Toggle music">
-								<svg class="kanter-music-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-									<path d="M9 18V5l12-2v13"></path>
-									<circle cx="6" cy="18" r="3"></circle>
-									<circle cx="18" cy="16" r="3"></circle>
-								</svg>
-								<svg class="kanter-music-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-									<path d="M9 18V5l12-2v13"></path>
-									<circle cx="6" cy="18" r="3"></circle>
-									<path d="m3 3 18 18"></path>
-								</svg>
-							</button>
-						</div>
 						<div class="kanter-team kanter-team-away">
 							<span class="kanter-team-mark" aria-hidden="true">C</span>
 							<span>CPU</span>
@@ -101,6 +76,9 @@ const gameSchema = {
 						<div class="kanter-flash" data-flash></div>
 						<div class="kanter-goal-banner" data-goal-banner aria-hidden="true">GOAL!</div>
 
+						<div class="kanter-overlay" data-pause-overlay role="status" aria-hidden="true">
+							<div class="kanter-overlay-card"><h2>Game paused</h2><p>Press Resume to keep playing.</p></div>
+						</div>
 						<div class="kanter-overlay is-visible" data-start-overlay>
 							<div class="kanter-overlay-card">
 								<p class="kanter-card-kicker">Kanter Ball</p>
@@ -114,8 +92,8 @@ const gameSchema = {
 									</button>
 								</div>
 								<div class="kanter-difficulty" role="group" aria-label="Choose difficulty">
-									<button type="button" data-difficulty="easy">Easy</button>
-									<button type="button" data-difficulty="medium" class="is-active">Medium</button>
+									<button type="button" data-difficulty="easy" class="is-active">Easy</button>
+									<button type="button" data-difficulty="medium">Medium</button>
 									<button type="button" data-difficulty="hard">Hard</button>
 								</div>
 								<button type="button" class="btn-cta" data-start>Start match</button>
@@ -143,9 +121,46 @@ const gameSchema = {
 							</div>
 						</div>
 					</div>
+
+					<div class="kanter-controlbar" role="group" aria-label="Match controls">
+						<div class="kanter-audio-controls">
+							<button class="kanter-icon-button" type="button" data-mute aria-pressed="false" aria-label="Toggle match sounds" title="Toggle match sounds">
+								<svg class="kanter-sound-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+									<path d="M11 5 6 9H3v6h3l5 4V5Z"></path>
+									<path d="M15.5 8.5a5 5 0 0 1 0 7"></path>
+									<path d="M18.5 5.5a9 9 0 0 1 0 13"></path>
+								</svg>
+								<svg class="kanter-sound-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+									<path d="M11 5 6 9H3v6h3l5 4V5Z"></path>
+									<path d="m16 9 5 5"></path>
+									<path d="m21 9-5 5"></path>
+								</svg>
+							</button>
+							<button class="kanter-icon-button" type="button" data-music aria-pressed="false" aria-label="Toggle music" title="Toggle music">
+								<svg class="kanter-music-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+									<path d="M9 18V5l12-2v13"></path>
+									<circle cx="6" cy="18" r="3"></circle>
+									<circle cx="18" cy="16" r="3"></circle>
+								</svg>
+								<svg class="kanter-music-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+									<path d="M9 18V5l12-2v13"></path>
+									<circle cx="6" cy="18" r="3"></circle>
+									<path d="m3 3 18 18"></path>
+								</svg>
+							</button>
+						</div>
+						<input class="kanter-volume" data-volume type="range" min="0" max="100" value="100" aria-label="Game volume" />
+						<button class="kanter-control-button" type="button" data-pause disabled aria-pressed="false" aria-label="Pause game" title="Pause game">
+							<svg class="pause-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M8 5v14M16 5v14" /></svg>
+							<svg class="resume-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m8 4 12 8-12 8Z" /></svg>
+						</button>
+						<button class="kanter-control-button" type="button" data-end-game disabled aria-label="End game" title="End game"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="2" /></svg></button>
+						<button class="kanter-control-button" type="button" data-help aria-label="How to play" title="How to play" aria-haspopup="dialog" aria-controls="kanter-help"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 2-2.5 2-2.5 4M12 16.5v.1" /></svg></button>
+					</div>
 				</section>
 			</div>
 		</section>
+		<KanterHelp />
 	</main>
 </Layout>
 
@@ -329,19 +344,37 @@ const gameSchema = {
 		padding: 0.26rem 0.5rem;
 	}
 
+	.kanter-controlbar {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		padding: 12px 10px;
+		border-top: 1px solid rgba(230, 168, 23, 0.2);
+		background: repeating-linear-gradient(-45deg, #121212 0 18px, rgba(230, 168, 23, 0.05) 18px 20px), #121212;
+	}
+
+	.kanter-volume { flex: 1; width: 48px; min-width: 32px; height: 44px; accent-color: #F2A900; }
+	.kanter-control-button {
+		width: 44px; height: 44px; flex: 0 0 44px; display: grid; place-items: center; padding: 0; border-radius: 12px;
+		border: 1px solid rgba(248, 248, 250, 0.25); color: #F8F8FA;
+		background: #2C0C54; font-size: 0.75rem; font-weight: 700;
+	}
+	.kanter-control-button svg { width: 20px; height: 20px; }
+	.resume-icon, [data-pause][aria-pressed="true"] .pause-icon { display: none; }
+	[data-pause][aria-pressed="true"] .resume-icon { display: block; }
+	.kanter-control-button:disabled { opacity: 0.4; cursor: default; }
+	.kanter-control-button[aria-pressed="true"] { background: #F2A900; color: #171717; }
+	.kanter-controlbar :focus-visible { outline: 2px solid #F2A900; outline-offset: 3px; }
+
 	.kanter-audio-controls {
-		position: absolute;
-		top: 0.7rem;
-		right: 0.7rem;
-		z-index: 1;
 		display: flex;
 		gap: 0.35rem;
 	}
 
 	.kanter-icon-button {
 		display: inline-flex;
-		width: 2.25rem;
-		height: 2.25rem;
+		width: 44px;
+		height: 44px;
 		align-items: center;
 		justify-content: center;
 		border: 1px solid rgba(248, 248, 250, 0.14);
@@ -722,6 +755,7 @@ import { ownerReaction, OWNER_LIMITS } from '../lib/kanter-ball/owner.js';
 import { advanceMatchClock, crossedCountdownThreshold } from '../lib/kanter-ball/pacing.js';
 import { collisionGeometry, lastTouchAfterCollision } from '../lib/kanter-ball/physics.js';
 import { classifyGoal } from '../lib/kanter-ball/scoring.js';
+import { confirmedSave, threatensGoal } from '../lib/kanter-ball/commentary.js';
 import {
 	detectBoundaryEvent,
 	goalKickKeeperPositions,
@@ -749,6 +783,13 @@ import {
 	const shareButton = document.querySelector('[data-share]');
 	const muteButton = document.querySelector('[data-mute]');
 	const musicButton = document.querySelector('[data-music]');
+	const volumeInput = document.querySelector<HTMLInputElement>('[data-volume]');
+	const pauseButton = document.querySelector<HTMLButtonElement>('[data-pause]');
+	const endGameButton = document.querySelector<HTMLButtonElement>('[data-end-game]');
+	const helpButton = document.querySelector<HTMLButtonElement>('[data-help]');
+	const helpDialog = document.querySelector<HTMLDialogElement>('[data-help-dialog]');
+	let resumeAfterHelp = false;
+	const pauseOverlay = document.querySelector('[data-pause-overlay]');
 	const toastEl = document.querySelector('[data-toast]');
 	const flashEl = document.querySelector('[data-flash]');
 	const goalBannerEl = document.querySelector('[data-goal-banner]');
@@ -770,6 +811,14 @@ import {
 	const FIELD_INSET = 28;
 	const FIELD = insetPitch(PITCH, FIELD_INSET);
 	const GOAL = { width: 186, depth: 34 };
+	// Fixed simulation timestep so match outcomes are reproducible (same
+	// step size every run) — a prerequisite for moving this engine to an
+	// authoritative server re-simulation later. Rendering and audio stay on
+	// the real, variable frame rate; only `tickRun` (gameplay + physics) is
+	// advanced in fixed-size increments.
+	const FIXED_DT = 1 / 60;
+	const MAX_FRAME_DT = 0.25;
+	const MAX_FIXED_STEPS_PER_FRAME = 8;
 	/** @type {Record<string, { label: string }>} */
 	const DIFFICULTIES = {
 		easy: {
@@ -796,7 +845,7 @@ import {
 				'/audio/kanter-ball/Ball just misses.aac',
 				'/audio/kanter-ball/close to score .aac',
 				'/audio/kanter-ball/what a chance.aac',
-				'/audio/kanter-ball/hits the bar.aac',
+				// '/audio/kanter-ball/hits the bar.aac', // No height or crossbar physics.
 			],
 			volume: 0.84,
 		},
@@ -804,11 +853,12 @@ import {
 			clips: [
 				'/audio/kanter-ball/Keeper saves .aac',
 				'/audio/kanter-ball/keeper saves 1.aac',
-				'/audio/kanter-ball/keeper saves again.aac',
+				// '/audio/kanter-ball/keeper saves again.aac', // No verified repeat-save sequence.
 				'/audio/kanter-ball/Keeper stops it.aac',
 			],
 			volume: 0.84,
 		},
+		heavy: { clips: ['/audio/kanter-ball/Heavy shot.aac'], volume: 0.8 },
 		goal_kick: { clips: ['/audio/kanter-ball/goalkick.aac'], volume: 0.82 },
 		owner_1: { clips: ['/audio/kanter-ball/Player hits the owners cap.aac'], volume: 0.84 },
 		owner_2: {
@@ -838,9 +888,9 @@ import {
 	const FLICK_SOUNDS = {
 		minSpeed: 180,
 		maxSpeed: 1050,
-		light: ['/audio/kanter-ball/back pass.aac', '/audio/kanter-ball/back pass 2.aac'],
-		medium: ['/audio/kanter-ball/forward pass.aac', '/audio/kanter-ball/through ball.aac'],
-		heavy: ['/audio/kanter-ball/Heavy shot.aac'],
+		// Pass intent/receiver and defensive gaps are not reliably detected.
+		// light: ['/audio/kanter-ball/back pass.aac', '/audio/kanter-ball/back pass 2.aac'],
+		// medium: ['/audio/kanter-ball/forward pass.aac', '/audio/kanter-ball/through ball.aac'],
 	};
 	const GOAL_SFX = {
 		netHit: { src: '/audio/kanter-ball/goal-net-hit.m4a', volume: 0.8 },
@@ -870,7 +920,8 @@ import {
 	const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 	const state = {
 		mode: 'ready',
-		difficulty: 'medium',
+		volume: 1,
+		difficulty: 'easy',
 		rulesMode: 'street',
 		turn: 'player',
 		playerScore: 0,
@@ -881,6 +932,7 @@ import {
 		matchId: null as string | null,
 		stats: { shots: 0, saves: 0, nearMisses: 0, ownGoals: 0 },
 		lastFrame: performance.now(),
+		accumulator: 0,
 		timeLowSpoken: false,
 		ownerHits: 0,
 		records: readRecords(),
@@ -889,6 +941,7 @@ import {
 		audioReady: false,
 		selectedCap: null as KanterBody | null,
 		dragging: false,
+		dragStart: null as { x: number; y: number } | null,
 		dragPoint: null,
 		settleTimer: 0,
 		cpuThinkTimer: 0,
@@ -931,6 +984,35 @@ import {
 	followLink?.addEventListener('click', () => track('waitlist_click', { target: 'x', ...currentResultData() }));
 	muteButton?.addEventListener('click', toggleMute);
 	musicButton?.addEventListener('click', toggleMusic);
+	pauseButton?.addEventListener('click', togglePause);
+	helpButton?.addEventListener('click', () => {
+		if (!helpDialog || helpDialog.open) return;
+		resumeAfterHelp = state.mode === 'running';
+		if (resumeAfterHelp) togglePause();
+		helpDialog.showModal();
+	});
+	helpDialog?.addEventListener('close', () => {
+		if (resumeAfterHelp && state.mode === 'paused' && !document.hidden) togglePause();
+		resumeAfterHelp = false;
+		helpButton?.focus({ preventScroll: true });
+	});
+	document.addEventListener('visibilitychange', () => {
+		// Leaving the tab (switch tab, minimize, lock screen, etc.) should
+		// stop the match audio rather than keep playing in the background.
+		// Reuse togglePause so it also freezes play and shows the pause UI;
+		// resuming is left to the player hitting "Resume" on return, rather
+		// than surprising them with sound the instant the tab is visible
+		// again.
+		if (document.hidden) resumeAfterHelp = false;
+		if (document.hidden && state.mode === 'running') togglePause();
+	});
+	endGameButton?.addEventListener('click', () => {
+		if (state.mode === 'running' || state.mode === 'paused') endGame('manual');
+	});
+	volumeInput?.addEventListener('input', () => {
+		state.volume = Number(volumeInput.value) / 100;
+		for (const [audio, volume] of activeSounds) audio.volume = volume * state.volume;
+	});
 	for (const button of difficultyButtons) {
 		button.addEventListener('click', () => setDifficulty(button.getAttribute('data-difficulty') || 'medium'));
 	}
@@ -1020,6 +1102,7 @@ import {
 		state.stats = { shots: 0, saves: 0, nearMisses: 0, ownGoals: 0 };
 		state.selectedCap = null;
 		state.dragging = false;
+		state.dragStart = null;
 		state.dragPoint = null;
 		state.settleTimer = 0;
 		state.cpuThinkTimer = 0;
@@ -1037,6 +1120,21 @@ import {
 		updateHud();
 	}
 
+	function togglePause() {
+		if (state.mode !== 'running' && state.mode !== 'paused') return;
+		const paused = state.mode === 'running';
+		state.mode = paused ? 'paused' : 'running';
+		cancelDrag();
+		state.accumulator = 0;
+		state.lastFrame = performance.now();
+		for (const audio of activeSounds.keys()) {
+			if (paused) audio.pause();
+			else if (audio === state.audio.ambienceAudio ? !state.musicMuted : !state.muted) audio.play().catch(() => {});
+		}
+		if (!paused) startAmbience();
+		updateHud();
+	}
+
 	function endGame(reason = 'full_time') {
 		if (state.mode === 'ended') return;
 		state.mode = 'ended';
@@ -1044,7 +1142,7 @@ import {
 		state.dragging = false;
 		state.selectedCap = null;
 		const result = getResult(reason);
-		updateRecords(result);
+		if (reason !== 'manual') updateRecords(result);
 		if (endKicker) {
 			endKicker.textContent = reason === 'owner_collect' ? 'Owner collected the ball' : result.kicker;
 		}
@@ -1053,12 +1151,14 @@ import {
 			endCopy.textContent = `${state.playerScore}-${state.cpuScore} · ${rulesLabel()} · ${difficultyLabel()}. Best streak: ${state.records.bestStreak}.`;
 		}
 		endOverlay?.classList.add('is-visible');
-		playTerminalCommentary(reason === 'owner_collect' ? 'owner_collect' : 'full_time');
+		if (reason === 'manual') resetForegroundAudio({ stopActive: true });
+		else playTerminalCommentary(reason === 'owner_collect' ? 'owner_collect' : 'full_time');
 		track('game_end', currentResultData(reason));
 		updateHud();
 	}
 
 	function getResult(reason) {
+		if (reason === 'manual') return { result: 'ended', kicker: 'Match ended', title: 'You ended the match' };
 		if (reason === 'owner_collect') {
 			return { result: 'loss', kicker: 'Owner collected the ball', title: 'Owner don collect am' };
 		}
@@ -1123,6 +1223,7 @@ import {
 		state.turn = nextTurn;
 		state.selectedCap = null;
 		state.dragging = false;
+		state.dragStart = null;
 		state.dragPoint = null;
 		state.currentShot = null;
 		state.lastTouch = null;
@@ -1172,6 +1273,7 @@ import {
 		if (!cap) return false;
 		state.selectedCap = cap;
 		state.dragging = true;
+		state.dragStart = { ...point };
 		state.dragPoint = point;
 		return true;
 	}
@@ -1179,6 +1281,16 @@ import {
 	function releaseDrag(point) {
 		const cap = state.selectedCap;
 		if (!cap) return;
+		// A press near the cap edge is selection, not a flick. Measure actual
+		// pointer travel in screen pixels so touch jitter is ignored at every size.
+		const start = state.dragStart;
+		const movedPixels = start
+			? Math.hypot(point.x - start.x, point.y - start.y) * canvas.getBoundingClientRect().width / WORLD.width
+			: 0;
+		if (movedPixels < 8) {
+			cancelDrag();
+			return;
+		}
 		const physics = currentMode().physics;
 		const drag = clampVector({ x: cap.x - point.x, y: cap.y - point.y }, physics.maxDrag);
 		cancelDrag();
@@ -1230,14 +1342,34 @@ import {
 
 	function cancelDrag() {
 		state.dragging = false;
+		state.dragStart = null;
 		state.dragPoint = null;
 	}
 
 	function loop(now) {
-		const dt = Math.min((now - state.lastFrame) / 1000, 0.033);
+		const frameDt = Math.min((now - state.lastFrame) / 1000, MAX_FRAME_DT);
 		state.lastFrame = now;
-		if (state.mode === 'running') tickRun(dt);
-		tickAudio(dt);
+
+		if (state.mode === 'running') {
+			state.accumulator += frameDt;
+			let steps = 0;
+			while (
+				state.accumulator >= FIXED_DT &&
+				state.mode === 'running' &&
+				steps < MAX_FIXED_STEPS_PER_FRAME
+			) {
+				tickRun(FIXED_DT);
+				state.accumulator -= FIXED_DT;
+				steps += 1;
+			}
+			// Dropped a backlog (e.g. the tab was backgrounded) rather than
+			// spiral-of-death catching up all at once.
+			if (steps >= MAX_FIXED_STEPS_PER_FRAME) state.accumulator = 0;
+		} else {
+			state.accumulator = 0;
+		}
+
+		if (state.mode !== 'paused') tickAudio(frameDt);
 		draw();
 		requestAnimationFrame(loop);
 	}
@@ -1359,9 +1491,14 @@ import {
 		if (!shot) return;
 		if (ownerRuleActive() && shot.side === 'player' && shot.touchedOwner && !shot.touchedBall && !shot.scored) {
 			handleOwnerHit();
-		} else if (!shot.scored && shot.touchedBall && Math.random() < 0.12) {
-			playCommentary('near_miss');
-			state.stats.nearMisses += 1;
+		}
+		// Random ball touches cannot establish a near miss; keep these clips disabled
+		// until goal-mouth trajectory/proximity tracking is available.
+		// playCommentary('near_miss');
+		if (!shot.scored && shot.saved) {
+			playCommentary('save');
+			state.stats.saves += 1;
+			track('save_made', { keeperSide: shot.saved, shooterSide: shot.side, rules: state.rulesMode });
 		}
 		if (recoverTrappedGoalMouth()) return;
 		recoverKeepers();
@@ -1576,6 +1713,7 @@ import {
 		const predictedImpact = predictedBallImpactNormal(a, b);
 		const collision = collisionGeometry({ a, b, preferredNormal: predictedImpact });
 		if (!collision) return;
+		const incomingBall = { ...ball };
 		const { x: nx, y: ny } = collision.normal;
 		const { overlap } = collision;
 		a.x -= (nx * overlap) / 2;
@@ -1614,7 +1752,15 @@ import {
 		}
 
 		if (state.currentShot) {
-			if (a === ball || b === ball) state.currentShot.touchedBall = true;
+			if ((a === ball || b === ball) && speed < -1) {
+				const shot = state.currentShot;
+				const hitter = a === ball ? b : a;
+				if (!shot.touchedBall && hitter === shot.cap && Math.hypot(ball.vx, ball.vy) >= 750 &&
+					threatensGoal({ ball, defendingSide: shot.side === 'player' ? 'cpu' : 'player', pitch: FIELD, goal: GOAL, ...currentMode().physics })) {
+					playCommentary('heavy');
+				}
+				shot.touchedBall = true;
+			}
 			const owner = getOwner();
 			if (ownerRuleActive() && (a === owner || b === owner)) {
 				state.currentShot.touchedOwner = true;
@@ -1632,11 +1778,12 @@ import {
 				}
 			}
 			if ((a === ball && b.role === 'keeper') || (b === ball && a.role === 'keeper')) {
-				playCommentary('save');
 				const keeper = a === ball ? b : a;
-				if (keeper.side !== state.currentShot.side) {
-					state.stats.saves += 1;
-					track('save_made', { keeperSide: keeper.side, shooterSide: state.currentShot.side, rules: state.rulesMode });
+				if (confirmedSave({ incoming: incomingBall, outgoing: ball, keeperSide: keeper.side,
+					shootingSide: state.currentShot.side, relativeNormalSpeed: speed,
+					pitch: FIELD, goal: GOAL, physics: currentMode().physics })) {
+					// Wait until the move finishes: a deflection can still become a goal.
+					state.currentShot.saved = keeper.side;
 				}
 			}
 		}
@@ -2032,6 +2179,17 @@ import {
 	}
 
 	function updateHud() {
+		const paused = state.mode === 'paused';
+		const active = paused || state.mode === 'running';
+		if (pauseButton) {
+			pauseButton.disabled = !active;
+			pauseButton.setAttribute('aria-label', paused ? 'Resume game' : 'Pause game');
+			pauseButton.title = paused ? 'Resume game' : 'Pause game';
+			pauseButton.setAttribute('aria-pressed', String(paused));
+		}
+		if (endGameButton) endGameButton.disabled = !active;
+		pauseOverlay?.classList.toggle('is-visible', paused);
+		pauseOverlay?.setAttribute('aria-hidden', String(!paused));
 		const mode = currentMode();
 		if (playerScoreEl) playerScoreEl.textContent = String(state.playerScore);
 		if (cpuScoreEl) cpuScoreEl.textContent = String(state.cpuScore);
@@ -2131,7 +2289,12 @@ import {
 	function toggleMute() {
 		state.muted = !state.muted;
 		writeMuted(state.muted);
-		if (state.muted) resetForegroundAudio({ stopActive: true });
+		if (state.muted) {
+			resetForegroundAudio({ stopActive: true });
+			for (const audio of activeSounds.keys()) {
+				if (audio !== state.audio.ambienceAudio) { audio.pause(); activeSounds.delete(audio); }
+			}
+		}
 		else unlockAudio();
 		track('mute_toggle', { muted: state.muted, mode: state.mode });
 		updateHud();
@@ -2158,7 +2321,13 @@ import {
 		if (!state.musicMuted) startAmbience();
 	}
 
+	const activeSounds = new Map<HTMLAudioElement, number>();
+	function setSoundVolume(audio, volume) {
+		activeSounds.set(audio, volume);
+		audio.volume = volume * state.volume;
+	}
 	function startAmbience() {
+		if (state.mode === 'paused') return;
 		const track = currentAmbience();
 		if (state.musicMuted || !track.url) return;
 		if (state.audio.ambienceAudio && state.audio.ambienceTrackUrl === track.url) {
@@ -2168,12 +2337,13 @@ import {
 		}
 		if (state.audio.ambienceAudio) {
 			state.audio.ambienceAudio.pause();
+			activeSounds.delete(state.audio.ambienceAudio);
 			state.audio.ambienceAudio = null;
 		}
 		const audio = new Audio(track.url);
 		audio.loop = true;
 		audio.preload = 'auto';
-		audio.volume = track.volume;
+		setSoundVolume(audio, track.volume);
 		state.audio.ambienceAudio = audio;
 		state.audio.ambienceTrackUrl = track.url;
 		audio.addEventListener(
@@ -2206,7 +2376,7 @@ import {
 	}
 
 	function setAmbienceVolume(volume) {
-		if (state.audio.ambienceAudio) state.audio.ambienceAudio.volume = volume;
+		if (state.audio.ambienceAudio) setSoundVolume(state.audio.ambienceAudio, volume);
 	}
 
 	function playFlickSound(speed) {
@@ -2216,12 +2386,7 @@ import {
 			0,
 			1
 		);
-		const clips = intensity > 0.76 ? FLICK_SOUNDS.heavy : intensity > 0.36 ? FLICK_SOUNDS.medium : FLICK_SOUNDS.light;
-		playForegroundSound({
-			src: randomFrom(clips),
-			volume: 0.52 + intensity * 0.34,
-			kind: 'moment',
-		});
+		// Launch speed describes a cap flick, not a pass or a shot on goal.
 		playSfx(CAP_SFX.flick.src, CAP_SFX.flick.volume * (0.7 + intensity * 0.3));
 	}
 
@@ -2243,11 +2408,14 @@ import {
 		if (state.mode === 'ended' && kind !== 'terminal') return;
 		if (state.audio.foregroundAudio) {
 			state.audio.foregroundAudio.pause();
+			activeSounds.delete(state.audio.foregroundAudio);
 			state.audio.foregroundAudio.currentTime = 0;
 			state.audio.foregroundAudio = null;
 		}
 		const audio = new Audio(src);
-		audio.volume = volume;
+		audio.addEventListener('ended', () => activeSounds.delete(audio), { once: true });
+		audio.addEventListener('error', () => activeSounds.delete(audio), { once: true });
+		setSoundVolume(audio, volume);
 		state.audio.foregroundAudio = audio;
 		audio.addEventListener('loadedmetadata', () => duckAmbience(audio.duration + 0.45), { once: true });
 		let finished = false;
@@ -2264,7 +2432,9 @@ import {
 	function playSfx(src, volume = 0.85) {
 		if (state.muted || !state.audioReady || !src) return;
 		const audio = new Audio(src);
-		audio.volume = volume;
+		audio.addEventListener('ended', () => activeSounds.delete(audio), { once: true });
+		audio.addEventListener('error', () => activeSounds.delete(audio), { once: true });
+		setSoundVolume(audio, volume);
 		audio.addEventListener('loadedmetadata', () => duckAmbience(audio.duration + 0.45), { once: true });
 		audio.play().catch(() => {});
 	}
@@ -2300,6 +2470,7 @@ import {
 	function resetForegroundAudio({ stopActive = true } = {}) {
 		if (stopActive && state.audio.foregroundAudio) {
 			state.audio.foregroundAudio.pause();
+			activeSounds.delete(state.audio.foregroundAudio);
 			state.audio.foregroundAudio.currentTime = 0;
 			state.audio.foregroundAudio = null;
 		}

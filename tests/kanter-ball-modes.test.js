@@ -3,10 +3,11 @@ import assert from 'node:assert/strict';
 
 import { modeProfile } from '../src/lib/kanter-ball/modes.js';
 
-test('street mode is shorter, faster and more elastic than football mode', () => {
+test('street mode is faster and more elastic than football mode, with equal match length', () => {
 	const football = modeProfile('football');
 	const street = modeProfile('street');
-	assert.ok(street.matchSeconds < football.matchSeconds);
+	assert.equal(street.matchSeconds, football.matchSeconds);
+	assert.equal(street.matchSeconds, 120);
 	assert.ok(street.physics.friction < football.physics.friction);
 	assert.ok(street.physics.powerScale > football.physics.powerScale);
 	assert.ok(street.physics.restitution > football.physics.restitution);

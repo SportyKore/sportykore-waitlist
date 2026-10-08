@@ -1,0 +1,72 @@
+---
+import { MODE_PROFILES } from '../lib/kanter-ball/modes.js';
+---
+<dialog class="kanter-help" id="kanter-help" data-help-dialog aria-labelledby="kanter-help-title">
+	<header>
+		<div><p class="eyebrow">Your touchline guide</p><h2 id="kanter-help-title">How to play</h2></div>
+		<form method="dialog"><button class="close" aria-label="Close game guide" title="Close" autofocus><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg></button></form>
+	</header>
+	<div class="help-body">
+		<p class="intro">Seven caps each. One ball. You play red, the computer plays purple. Send the ball into the top goal and protect the bottom one.</p>
+		<figure>
+			<svg class="flick-diagram" viewBox="0 0 480 150" role="img" aria-labelledby="flick-title flick-desc">
+				<title id="flick-title">Pull back, then release</title><desc id="flick-desc">Pull down from your cap. On release the cap moves up toward the ball. A longer pull gives more power.</desc>
+				<rect x="1" y="1" width="478" height="148" rx="14" fill="#2C0C54" />
+				<path d="M130 75v48" stroke="#E5D3F4" stroke-width="2" stroke-dasharray="5 5" />
+				<circle cx="130" cy="75" r="19" fill="#121212" stroke="#F8F8FA" stroke-width="2" />
+				<text x="130" y="80" text-anchor="middle" fill="#F8F8FA" font-size="12">YOU</text>
+				<circle cx="130" cy="128" r="8" fill="none" stroke="#E5D3F4" stroke-width="2" />
+				<path d="M130 51V18m-7 8 7-8 7 8" fill="none" stroke="#E6A817" stroke-width="3" />
+				<circle cx="130" cy="10" r="5" fill="#F8F8FA" />
+				<text x="181" y="41" fill="#E6A817" font-size="15" font-weight="700">Cap moves forward</text>
+				<text x="181" y="85" fill="#F8F8FA" font-size="15">Hold your cap</text>
+				<text x="181" y="130" fill="#E5D3F4" font-size="15">Pull back to aim</text>
+			</svg>
+			<figcaption>Release to flick. The aim guide shows your direction.</figcaption>
+		</figure>
+		<ol class="steps">
+			<li><strong>Pick a red cap.</strong> A tap only selects it; it won’t use your turn.</li>
+			<li><strong>Pull opposite your target.</strong> Drag farther for more power, then release. Hit the ball with your cap.</li>
+			<li><strong>Take turns.</strong> Let the pieces settle, then the computer plays. Plan your next flick while you wait.</li>
+		</ol>
+		<h3>Choose your format</h3>
+		<div class="formats">
+			<section><p class="format-label">Street</p><h4>Play the rebounds</h4><p>The ball stays in play off the walls. Stronger bounces and faster movement make bank shots useful.</p><p>The gold <strong>O</strong> cap owns the ball. Hitting it on your turn without touching the ball raises its anger. Seven such turns end the match in a loss; scoring resets its anger.</p><span>{MODE_PROFILES.street.matchSeconds} seconds · First to {MODE_PROFILES.street.goalTarget}</span></section>
+			<section><p class="format-label">Football</p><h4>Play the positions</h4><p>The ball can go out for throw-ins, corners and goal kicks. Movement is more controlled, with softer rebounds.</p><p>The whole ball must cross the goal line to score. There’s no owner challenge. When the ball is safe, your keeper can only be flicked back toward goal, except when taking a restart.</p><span>{MODE_PROFILES.football.matchSeconds} seconds · First to {MODE_PROFILES.football.goalTarget}</span></section>
+		</div>
+		<h3>Win the match</h3>
+		<p>Reach the goal target first, or lead when the clock runs out. Equal scores at full time mean a draw. The clock runs while you choose a shot; it pauses for the computer’s thinking time and goal celebrations.</p>
+		<h3>Pick your challenge</h3>
+		<p><strong>Easy</strong> gives you more room for mistakes. <strong>Medium</strong> improves the computer’s aim and defence. <strong>Hard</strong> brings its strongest shots and most accurate play.</p>
+		<h3>Your control bar</h3>
+		<p>The speaker toggles match sounds; the music note toggles background audio. The slider adjusts volume. Pause freezes play and the clock; the play icon resumes. The square ends the match early without changing your win/loss record.</p>
+		<p class="help-note">Opening this guide pauses a running match. Close it to continue. If you already paused, the match stays paused.</p>
+	</div>
+</dialog>
+<style>
+	.kanter-help { width: min(680px, calc(100vw - 24px)); max-height: min(88dvh, 850px); margin: auto; padding: 0; border: 1px solid rgba(230,168,23,.3); border-radius: 16px; color: #F8F8FA; background: repeating-linear-gradient(-45deg,#121212 0 18px,rgba(230,168,23,.05) 18px 20px),#121212; overflow: auto; overscroll-behavior: contain; }
+	.kanter-help::backdrop { background: rgba(0,0,0,.78); }
+	header { position: sticky; top: 0; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 20px 24px; background: #2C0C54; z-index: 1; }
+	.eyebrow { color: #FBE9B8; text-transform: uppercase; letter-spacing: .1em; font-size: 10px; font-weight: 700; margin: 0 0 4px; }
+	h2 { font-family: var(--font-playfair); font-size: 30px; line-height: 1.15; margin: 0; }
+	.close { width: 44px; height: 44px; display: grid; place-items: center; border: 1px solid #E5D3F4; border-radius: 12px; background: transparent; color: #F8F8FA; }
+	.close svg { width: 20px; height: 20px; }
+	.close:focus-visible { outline: 2px solid #F2A900; outline-offset: 3px; }
+	.help-body { padding: 24px; font-size: 14px; line-height: 1.65; }
+	p { margin: 0 0 14px; }
+	.intro { font-size: 16px; }
+	figure { margin: 20px 0; }
+	.flick-diagram { display: block; width: 100%; height: auto; }
+	figcaption { margin-top: 8px; color: #E5D3F4; font-size: 12px; }
+	.steps { padding-left: 20px; margin: 20px 0 28px; }
+	li { padding-left: 4px; margin: 8px 0; }
+	li::marker { color: #E6A817; font-weight: 700; }
+	h3 { font-family: var(--font-playfair); font-size: 23px; margin: 26px 0 12px; }
+	.formats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+	.formats section { background: rgba(44,12,84,.6); border: 1px solid rgba(229,211,244,.2); padding: 16px; border-radius: 12px; }
+	.format-label { color: #E6A817; font-size: 11px; text-transform: uppercase; letter-spacing: .1em; font-weight: 700; margin: 0 0 6px; }
+	h4 { font-size: 16px; font-weight: 700; margin: 0 0 12px; }
+	.formats span { color: #FBE9B8; font-size: 12px; font-weight: 700; }
+	.help-note { color: #E5D3F4; font-size: 12px; margin-bottom: 0; }
+	@media (max-width: 520px) { .formats { grid-template-columns: 1fr; } header { padding: 16px; } .help-body { padding: 16px; } }
+</style>

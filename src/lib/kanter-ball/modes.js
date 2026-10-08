@@ -1,7 +1,7 @@
 export const MODE_PROFILES = {
 	football: {
 		label: 'Football rules',
-		matchSeconds: 90,
+		matchSeconds: 120,
 		goalTarget: 3,
 		ownerRule: false,
 		summary: 'Tactical play with throw-ins, corners, goal kicks and proper restarts.',
@@ -19,7 +19,7 @@ export const MODE_PROFILES = {
 	},
 	street: {
 		label: 'Street rules',
-		matchSeconds: 60,
+		matchSeconds: 120,
 		goalTarget: 3,
 		ownerRule: true,
 		summary: 'Fast continuous play, stronger rebounds and the owner-of-the-ball challenge.',
