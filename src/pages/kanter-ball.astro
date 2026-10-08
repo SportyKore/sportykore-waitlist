@@ -104,21 +104,97 @@ const gameSchema = {
 						<div class="kanter-overlay is-visible" data-start-overlay>
 							<div class="kanter-overlay-card">
 								<p class="kanter-card-kicker">Kanter Ball</p>
-								<h2>Set match</h2>
-								<div class="kanter-rules" role="group" aria-label="Choose match rules">
-									<button type="button" data-rules="football">
-										<span>Football</span>
-									</button>
-									<button type="button" data-rules="street" class="is-active">
-										<span>Street</span>
-									</button>
+
+								<div data-setup-panel="mode">
+									<h2>Set match</h2>
+									<div class="kanter-mode-choice">
+										<button type="button" class="btn-cta" data-choose-mode="single">
+											Single player
+										</button>
+										<button type="button" class="btn-ghost-dark" data-choose-mode="multiplayer">
+											Multiplayer
+										</button>
+									</div>
 								</div>
-								<div class="kanter-difficulty" role="group" aria-label="Choose difficulty">
-									<button type="button" data-difficulty="easy">Easy</button>
-									<button type="button" data-difficulty="medium" class="is-active">Medium</button>
-									<button type="button" data-difficulty="hard">Hard</button>
+
+								<div data-setup-panel="single" hidden>
+									<h2>Set match</h2>
+									<div class="kanter-rules" role="group" aria-label="Choose match rules">
+										<button type="button" data-rules="football">
+											<span>Football</span>
+										</button>
+										<button type="button" data-rules="street" class="is-active">
+											<span>Street</span>
+										</button>
+									</div>
+									<div class="kanter-difficulty" role="group" aria-label="Choose difficulty">
+										<button type="button" data-difficulty="easy">Easy</button>
+										<button type="button" data-difficulty="medium" class="is-active">Medium</button>
+										<button type="button" data-difficulty="hard">Hard</button>
+									</div>
+									<button type="button" class="btn-cta" data-start>Start match</button>
+									<button type="button" class="kanter-setup-back" data-back-to-mode>Back</button>
 								</div>
-								<button type="button" class="btn-cta" data-start>Start match</button>
+
+								<div data-setup-panel="mp-login" hidden>
+									<h2>Play a friend</h2>
+									<p class="kanter-mp-intro">Street rules, first to 3. Log in to create or join a match.</p>
+									<form data-mp-login-form class="kanter-mp-form">
+										<input
+											type="email"
+											required
+											autocomplete="email"
+											placeholder="you@example.com"
+											class="kanter-input"
+											data-mp-email
+										/>
+										<input
+											type="text"
+											required
+											placeholder="Your name"
+											class="kanter-input"
+											data-mp-name
+										/>
+										<input
+											type="text"
+											placeholder="6-digit code"
+											class="kanter-input"
+											data-mp-code
+											hidden
+										/>
+										<button type="submit" class="btn-cta" data-mp-login-submit>Send code</button>
+									</form>
+									<p class="kanter-mp-error" data-mp-login-error hidden></p>
+									<button type="button" class="kanter-setup-back" data-back-to-mode>Back</button>
+								</div>
+
+								<div data-setup-panel="mp-lobby" hidden>
+									<h2>Play a friend</h2>
+									<p class="kanter-mp-intro" data-mp-signed-in-as></p>
+									<button type="button" class="btn-cta kanter-mp-create" data-mp-create>
+										Create a match
+									</button>
+									<div class="kanter-mp-divider" role="separator"><span>or join one</span></div>
+									<form data-mp-join-form class="kanter-mp-form kanter-mp-join-form">
+										<input
+											type="text"
+											placeholder="Invite code"
+											class="kanter-input"
+											data-mp-join-code
+										/>
+										<button type="submit" class="btn-ghost-dark">Join</button>
+									</form>
+									<p class="kanter-mp-error" data-mp-lobby-error hidden></p>
+									<button type="button" class="kanter-setup-back" data-back-to-mode>Back</button>
+								</div>
+
+								<div data-setup-panel="mp-waiting" hidden>
+									<h2>Share this to start</h2>
+									<img class="kanter-mp-qr" data-mp-qr alt="Match invite QR code" />
+									<input readonly class="kanter-input" data-mp-invite-link />
+									<p class="kanter-mp-intro">Waiting for your opponent to join…</p>
+									<button type="button" class="kanter-setup-back" data-back-to-mode>Cancel</button>
+								</div>
 							</div>
 						</div>
 
@@ -523,6 +599,115 @@ const gameSchema = {
 		line-height: 1.55;
 	}
 
+	.kanter-mode-choice {
+		display: grid;
+		gap: 0.6rem;
+		margin: 0 0 0.25rem;
+	}
+
+	.kanter-mode-choice .btn-cta,
+	.kanter-mode-choice .btn-ghost-dark {
+		width: 100%;
+	}
+
+	.kanter-setup-back {
+		display: block;
+		margin: 0.7rem auto 0;
+		border: none;
+		background: none;
+		color: rgba(248, 248, 250, 0.58);
+		font-size: 0.82rem;
+		font-weight: 700;
+		text-decoration: underline;
+		text-underline-offset: 2px;
+		cursor: pointer;
+	}
+
+	.kanter-mp-intro {
+		margin: 0 0 0.9rem;
+		color: rgba(248, 248, 250, 0.68);
+		font-size: 0.85rem;
+		line-height: 1.4;
+	}
+
+	.kanter-mp-form {
+		display: grid;
+		gap: 0.55rem;
+		margin-bottom: 0.4rem;
+	}
+
+	.kanter-mp-create {
+		margin-bottom: 1.1rem;
+	}
+
+	.kanter-mp-divider {
+		display: flex;
+		align-items: center;
+		gap: 0.6rem;
+		margin: 0 0 1.1rem;
+		color: rgba(248, 248, 250, 0.42);
+		font-size: 0.72rem;
+		font-weight: 700;
+		letter-spacing: 0.04em;
+		text-transform: uppercase;
+	}
+
+	.kanter-mp-divider::before,
+	.kanter-mp-divider::after {
+		content: '';
+		flex: 1;
+		height: 1px;
+		background: rgba(248, 248, 250, 0.14);
+	}
+
+	.kanter-mp-join-form {
+		grid-template-columns: 1fr auto;
+		align-items: stretch;
+		gap: 0.5rem;
+		margin-bottom: 0;
+	}
+
+	.kanter-mp-join-form .kanter-input {
+		min-width: 0;
+	}
+
+	.kanter-mp-join-form .btn-ghost-dark {
+		padding: 0 1.2rem;
+		white-space: nowrap;
+	}
+
+	.kanter-input {
+		width: 100%;
+		min-height: 2.6rem;
+		border: 1px solid rgba(248, 248, 250, 0.18);
+		border-radius: 10px;
+		background: rgba(18, 18, 18, 0.55);
+		color: #f8f8fa;
+		font-size: 0.9rem;
+		font-weight: 600;
+		padding: 0 0.85rem;
+	}
+
+	.kanter-input::placeholder {
+		color: rgba(248, 248, 250, 0.4);
+	}
+
+	.kanter-mp-error {
+		margin: 0.5rem 0 0;
+		color: #ff9b9b;
+		font-size: 0.82rem;
+		font-weight: 700;
+	}
+
+	.kanter-mp-qr {
+		display: block;
+		width: 160px;
+		height: 160px;
+		margin: 0 auto 0.9rem;
+		border-radius: 10px;
+		background: #f8f8fa;
+	}
+
 	.kanter-difficulty,
 	.kanter-rules {
 		display: grid;
@@ -731,6 +916,18 @@ import {
 	restartClearancePositions,
 	resolveCounterWalls,
 } from '../lib/kanter-ball/boundaries.js';
+import QRCode from 'qrcode';
+import {
+	claimTimeout as apiClaimTimeout,
+	createMatch as apiCreateMatch,
+	getStoredUser,
+	joinMatch as apiJoinMatch,
+	logout as clearCanterSession,
+	requestOtp,
+	submitTurn as apiSubmitTurn,
+	verifyOtp,
+} from '../lib/canter-pvp/api';
+import { subscribeToMatch } from '../lib/canter-pvp/transmit';
 
 (() => {
 	const canvas = document.getElementById('kanter-canvas');
@@ -760,6 +957,23 @@ import {
 	const rulesButtons = Array.from(document.querySelectorAll('[data-rules]'));
 	const matchLengthEl = document.querySelector('[data-match-length]');
 	const goalTargetEl = document.querySelector('[data-goal-target]');
+
+	const setupPanels = Array.from(document.querySelectorAll('[data-setup-panel]'));
+	const chooseModeButtons = Array.from(document.querySelectorAll('[data-choose-mode]'));
+	const backToModeButtons = Array.from(document.querySelectorAll('[data-back-to-mode]'));
+	const mpLoginForm = document.querySelector('[data-mp-login-form]');
+	const mpEmailInput = document.querySelector('[data-mp-email]');
+	const mpNameInput = document.querySelector('[data-mp-name]');
+	const mpCodeInput = document.querySelector('[data-mp-code]');
+	const mpLoginSubmit = document.querySelector('[data-mp-login-submit]');
+	const mpLoginError = document.querySelector('[data-mp-login-error]');
+	const mpSignedInAs = document.querySelector('[data-mp-signed-in-as]');
+	const mpCreateButton = document.querySelector('[data-mp-create]');
+	const mpJoinForm = document.querySelector('[data-mp-join-form]');
+	const mpJoinCodeInput = document.querySelector('[data-mp-join-code]');
+	const mpLobbyError = document.querySelector('[data-mp-lobby-error]');
+	const mpQrImg = document.querySelector('[data-mp-qr]');
+	const mpInviteLinkInput = document.querySelector('[data-mp-invite-link]');
 
 	const MUTE_KEY = 'sportykore:kanter-ball:mute';
 	const MUSIC_MUTE_KEY = 'sportykore:kanter-ball:music-muted';
@@ -865,6 +1079,7 @@ import {
 		mass: number;
 		color: string;
 		owner: boolean;
+		pvpId?: string;
 	};
 
 	const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -908,6 +1123,20 @@ import {
 			duckTimer: 0,
 			lastCapCollideAt: 0,
 		},
+		setupPanel: 'mode' as 'mode' | 'single' | 'mp-login' | 'mp-lobby' | 'mp-waiting',
+		isPvp: false,
+		pvp: {
+			matchId: null as number | null,
+			myRole: null as 'host' | 'guest' | null,
+			myUserId: null as number | null,
+			opponentUserId: null as number | null,
+			animating: false,
+			turnExpiresAtMs: null as number | null,
+			capsById: new Map() as Map<string, KanterBody>,
+			unsubscribe: null as (() => void) | null,
+			claimingTimeout: false,
+		},
+		lastPvpSummary: null as { outcome: 'beat' | 'lost to' | 'drew with'; myScore: number; opponentScore: number } | null,
 	};
 
 	let ball: KanterBody = makeBody({ type: 'ball', side: 'neutral', x: 360, y: 490, r: 14, mass: 0.7, color: '#F8F8FA' });
@@ -921,11 +1150,21 @@ import {
 	requestAnimationFrame(loop);
 	track('game_ready', { difficulty: difficultyLabel(), rules: state.rulesMode });
 
+	if (new URLSearchParams(window.location.search).get('invite')) {
+		if (getStoredUser()) {
+			maybeAutoJoinFromUrl();
+		} else {
+			showSetupPanel('mp-login');
+		}
+	}
+
 	window.addEventListener('resize', resize);
 	startButton?.addEventListener('click', startGame);
 	rematchButton?.addEventListener('click', () => {
 		track('change_match_click', currentResultData());
-		showMatchSetup();
+		const returningFromPvp = Boolean(state.lastPvpSummary);
+		state.lastPvpSummary = null;
+		showMatchSetup({ returningFromPvp });
 	});
 	shareButton?.addEventListener('click', shareResult);
 	followLink?.addEventListener('click', () => track('waitlist_click', { target: 'x', ...currentResultData() }));
@@ -991,7 +1230,7 @@ import {
 		updateHud();
 	}
 
-	function showMatchSetup() {
+	function showMatchSetup({ returningFromPvp = false } = {}) {
 		resetForegroundAudio({ stopActive: true });
 		state.mode = 'ready';
 		startAmbience();
@@ -1002,6 +1241,9 @@ import {
 		state.currentShot = null;
 		endOverlay?.classList.remove('is-visible');
 		startOverlay?.classList.add('is-visible');
+		// Coming off a PvP match: skip the single/multiplayer choice and go
+		// straight back into the multiplayer lobby, not the CPU setup panel.
+		if (returningFromPvp) openMultiplayerSetup();
 		updateHud();
 	}
 
@@ -1040,6 +1282,8 @@ import {
 	function endGame(reason = 'full_time') {
 		if (state.mode === 'ended') return;
 		state.mode = 'ended';
+		state.lastPvpSummary = null;
+		if (rematchButton) rematchButton.textContent = 'Change match';
 		startAmbience();
 		state.dragging = false;
 		state.selectedCap = null;
@@ -1132,6 +1376,361 @@ import {
 		state.cpuThinkTimer = 0;
 	}
 
+	// ---------------------------------------------------------------------
+	// PvP: setup panels (single/multiplayer choice, login, lobby, invite)
+	// ---------------------------------------------------------------------
+
+	function showSetupPanel(name) {
+		state.setupPanel = name;
+		for (const panel of setupPanels) {
+			panel.hidden = panel.getAttribute('data-setup-panel') !== name;
+		}
+	}
+
+	function setMpError(el, message) {
+		if (!el) return;
+		el.textContent = message || '';
+		el.hidden = !message;
+	}
+
+	for (const button of chooseModeButtons) {
+		button.addEventListener('click', () => {
+			const mode = button.getAttribute('data-choose-mode');
+			if (mode === 'single') {
+				showSetupPanel('single');
+				return;
+			}
+			openMultiplayerSetup();
+		});
+	}
+
+	for (const button of backToModeButtons) {
+		button.addEventListener('click', () => showSetupPanel('mode'));
+	}
+
+	function openMultiplayerSetup() {
+		const user = getStoredUser();
+		if (user) {
+			if (mpSignedInAs) mpSignedInAs.textContent = `Signed in as ${user.email}`;
+			showSetupPanel('mp-lobby');
+		} else {
+			showSetupPanel('mp-login');
+		}
+	}
+
+	let mpCodeSent = false;
+
+	mpLoginForm?.addEventListener('submit', async (event) => {
+		event.preventDefault();
+		setMpError(mpLoginError, '');
+		const email = mpEmailInput?.value.trim();
+		const name = mpNameInput?.value.trim();
+		if (!email) return;
+		if (mpLoginSubmit) mpLoginSubmit.disabled = true;
+		try {
+			if (!mpCodeSent) {
+				await requestOtp(email, name);
+				mpCodeSent = true;
+				if (mpNameInput) mpNameInput.hidden = true;
+				if (mpCodeInput) mpCodeInput.hidden = false;
+				if (mpLoginSubmit) mpLoginSubmit.textContent = 'Verify code';
+			} else {
+				const code = mpCodeInput?.value.trim();
+				if (!code) return;
+				await verifyOtp(email, code);
+				mpCodeSent = false;
+				if (mpNameInput) mpNameInput.hidden = false;
+				if (mpCodeInput) {
+					mpCodeInput.hidden = true;
+					mpCodeInput.value = '';
+				}
+				if (mpLoginSubmit) mpLoginSubmit.textContent = 'Send code';
+				const joined = await maybeAutoJoinFromUrl();
+				if (!joined) openMultiplayerSetup();
+			}
+		} catch (error) {
+			setMpError(mpLoginError, error instanceof Error ? error.message : 'Something went wrong.');
+		} finally {
+			if (mpLoginSubmit) mpLoginSubmit.disabled = false;
+		}
+	});
+
+	mpCreateButton?.addEventListener('click', async () => {
+		setMpError(mpLobbyError, '');
+		if (mpCreateButton) mpCreateButton.disabled = true;
+		try {
+			const match = await apiCreateMatch();
+			showInviteWaiting(match);
+		} catch (error) {
+			setMpError(mpLobbyError, error instanceof Error ? error.message : 'Could not create a match.');
+		} finally {
+			if (mpCreateButton) mpCreateButton.disabled = false;
+		}
+	});
+
+	mpJoinForm?.addEventListener('submit', async (event) => {
+		event.preventDefault();
+		setMpError(mpLobbyError, '');
+		const code = mpJoinCodeInput?.value.trim();
+		if (!code) return;
+		try {
+			const match = await apiJoinMatch(code);
+			const user = getStoredUser();
+			enterPvpMatch(match, user.id === match.hostUserId ? 'host' : 'guest', user.id);
+		} catch (error) {
+			setMpError(mpLobbyError, error instanceof Error ? error.message : 'Could not join that match.');
+		}
+	});
+
+	function showInviteWaiting(match) {
+		const inviteUrl = `${window.location.origin}${window.location.pathname}?invite=${match.inviteCode}`;
+		if (mpInviteLinkInput) mpInviteLinkInput.value = inviteUrl;
+		if (mpQrImg) {
+			QRCode.toDataURL(inviteUrl, { margin: 1, width: 240 })
+				.then((dataUrl) => mpQrImg.setAttribute('src', dataUrl))
+				.catch(() => {});
+		}
+		showSetupPanel('mp-waiting');
+
+		const user = getStoredUser();
+		const unsubscribe = subscribeToMatch(match.id, (payload) => {
+			if (payload?.status === 'active') {
+				unsubscribe();
+				enterPvpMatch(payload, user.id === payload.hostUserId ? 'host' : 'guest', user.id);
+			}
+		});
+	}
+
+	async function maybeAutoJoinFromUrl() {
+		const inviteCode = new URLSearchParams(window.location.search).get('invite');
+		if (!inviteCode || !getStoredUser()) return false;
+		try {
+			const match = await apiJoinMatch(inviteCode);
+			const user = getStoredUser();
+			enterPvpMatch(match, user.id === match.hostUserId ? 'host' : 'guest', user.id);
+			return true;
+		} catch {
+			return false;
+		}
+	}
+
+	// ---------------------------------------------------------------------
+	// PvP: live match gameplay
+	// ---------------------------------------------------------------------
+
+	const PVP_CAP_META = {
+		'host-0': { role: 'keeper', owner: false, r: 25, mass: 1.8 },
+		'host-1': { role: 'outfield', owner: false, r: 24, mass: 1.6 },
+		'host-2': { role: 'outfield', owner: false, r: 24, mass: 1.6 },
+		'host-3': { role: 'outfield', owner: false, r: 24, mass: 1.6 },
+		'host-4': { role: 'outfield', owner: false, r: 24, mass: 1.6 },
+		'host-5': { role: 'outfield', owner: false, r: 24, mass: 1.6 },
+		'host-6': { role: 'outfield', owner: false, r: 24, mass: 1.6 },
+		'guest-0': { role: 'keeper', owner: false, r: 25, mass: 1.8 },
+		'guest-1': { role: 'outfield', owner: false, r: 24, mass: 1.6 },
+		'guest-2': { role: 'outfield', owner: false, r: 24, mass: 1.6 },
+		'guest-3': { role: 'outfield', owner: true, r: 24, mass: 1.6 },
+		'guest-4': { role: 'outfield', owner: false, r: 24, mass: 1.6 },
+		'guest-5': { role: 'outfield', owner: false, r: 24, mass: 1.6 },
+		'guest-6': { role: 'outfield', owner: false, r: 24, mass: 1.6 },
+	};
+
+	function pvpFlip(point) {
+		return { x: WORLD.width - point.x, y: WORLD.height - point.y };
+	}
+
+	function enterPvpMatch(match, myRole, myUserId) {
+		startOverlay?.classList.remove('is-visible');
+		endOverlay?.classList.remove('is-visible');
+		state.isPvp = true;
+		state.mode = 'running';
+		state.rulesMode = 'street';
+		state.pvp.matchId = match.id;
+		state.pvp.myRole = myRole;
+		state.pvp.myUserId = myUserId;
+		state.pvp.opponentUserId = myRole === 'host' ? match.guestUserId : match.hostUserId;
+		unlockAudio();
+		applyPvpMatch(match);
+		showToast(state.turn === 'player' ? 'Your turn.' : "Opponent's turn.");
+		state.pvp.unsubscribe?.();
+		state.pvp.unsubscribe = subscribeToMatch(match.id, onPvpMessage);
+	}
+
+	function onPvpMessage(payload) {
+		if (!payload || payload.type === undefined) return;
+		if (payload.type === 'turn_resolved') {
+			if (state.pvp.animating) return; // our own submit already handles this turn
+			playPvpFrames(payload.frames || []).then(() => {
+				applyPvpMatch(payload, payload.resultEvent);
+			});
+			return;
+		}
+		if (payload.type === 'match_updated' && !state.pvp.animating) {
+			applyPvpMatch(payload);
+		}
+	}
+
+	function initPvpBodies(bodiesState) {
+		const flip = state.pvp.myRole === 'guest';
+		const map = new Map();
+		const mine = [];
+		const theirs = [];
+		for (const body of bodiesState) {
+			if (body.id === 'ball') continue;
+			const meta = PVP_CAP_META[body.id];
+			if (!meta) continue;
+			const isMine = body.id.startsWith(state.pvp.myRole);
+			const pos = flip ? pvpFlip(body) : { x: body.x, y: body.y };
+			const local = makeBody({
+				type: 'cap',
+				side: isMine ? 'player' : 'cpu',
+				role: meta.role,
+				x: pos.x,
+				y: pos.y,
+				r: meta.r,
+				mass: meta.mass,
+				color: isMine ? '#E53935' : '#4A148C',
+				owner: meta.owner,
+			});
+			local.pvpId = body.id;
+			map.set(body.id, local);
+			(isMine ? mine : theirs).push(local);
+		}
+		const ballState = bodiesState.find((body) => body.id === 'ball');
+		const ballPos = ballState ? (flip ? pvpFlip(ballState) : ballState) : { x: 360, y: 490 };
+		ball = makeBody({ type: 'ball', side: 'neutral', x: ballPos.x, y: ballPos.y, r: 14, mass: 0.7, color: '#F8F8FA' });
+		playerCaps = mine;
+		cpuCaps = theirs;
+		bodies = [ball, ...playerCaps, ...cpuCaps];
+		state.pvp.capsById = map;
+		state.selectedCap = null;
+	}
+
+	function applyPvpFrame(frame) {
+		const flip = state.pvp.myRole === 'guest';
+		const ballPos = flip ? pvpFlip(frame.ball) : frame.ball;
+		ball.x = ballPos.x;
+		ball.y = ballPos.y;
+		for (const capFrame of frame.caps) {
+			const local = state.pvp.capsById.get(capFrame.id);
+			if (!local) continue;
+			const pos = flip ? pvpFlip(capFrame) : capFrame;
+			local.x = pos.x;
+			local.y = pos.y;
+		}
+	}
+
+	function playPvpFrames(frames) {
+		if (!frames.length) return Promise.resolve();
+		return new Promise((resolve) => {
+			let index = 0;
+			const step = () => {
+				if (index >= frames.length) {
+					resolve();
+					return;
+				}
+				applyPvpFrame(frames[index]);
+				index += 1;
+				requestAnimationFrame(step);
+			};
+			requestAnimationFrame(step);
+		});
+	}
+
+	function applyPvpMatch(match, resultEvent) {
+		if (match.state?.bodies) initPvpBodies(match.state.bodies);
+		state.playerScore = state.pvp.myRole === 'host' ? match.hostScore : match.guestScore;
+		state.cpuScore = state.pvp.myRole === 'host' ? match.guestScore : match.hostScore;
+		state.pvp.turnExpiresAtMs = match.turnExpiresAt ? new Date(match.turnExpiresAt).getTime() : null;
+		state.pvp.animating = false;
+
+		if (match.status === 'completed') {
+			endPvpMatch(match);
+			return;
+		}
+
+		state.turn = match.currentTurnUserId === state.pvp.myUserId ? 'player' : 'cpu';
+		if (resultEvent?.type === 'goal') {
+			showGoalBanner();
+			playSfx(GOAL_SFX.netHit.src, GOAL_SFX.netHit.volume);
+			playSfx(GOAL_SFX.celebration.src, GOAL_SFX.celebration.volume);
+			const iScored =
+				(resultEvent.scoringSide === 'host') === (state.pvp.myRole === 'host');
+			showToast(resultEvent.ownGoal ? 'Own goal!' : iScored ? 'You scored!' : 'Opponent scored.');
+		} else {
+			showToast(state.turn === 'player' ? 'Your turn.' : "Opponent's turn.");
+		}
+		updateHud();
+	}
+
+	function endPvpMatch(match) {
+		state.isPvp = false;
+		state.mode = 'ended';
+		state.pvp.unsubscribe?.();
+		state.pvp.unsubscribe = null;
+		const won = match.winnerUserId === state.pvp.myUserId;
+		const draw = !match.winnerUserId;
+		const myScore = state.pvp.myRole === 'host' ? match.hostScore : match.guestScore;
+		const opponentScore = state.pvp.myRole === 'host' ? match.guestScore : match.hostScore;
+		state.lastPvpSummary = {
+			outcome: won ? 'beat' : draw ? 'drew with' : 'lost to',
+			myScore,
+			opponentScore,
+		};
+		if (endKicker) endKicker.textContent = won ? 'You win' : draw ? 'Full time' : 'Opponent wins';
+		if (endTitle) endTitle.textContent = won ? 'You beat your opponent' : draw ? 'Draw game' : 'Better luck next time';
+		if (endCopy) {
+			endCopy.textContent = `${state.playerScore}-${state.cpuScore} · Street rules · PvP.`;
+		}
+		if (rematchButton) rematchButton.textContent = 'Play again';
+		endOverlay?.classList.add('is-visible');
+		updateHud();
+	}
+
+	async function releasePvpDrag(cap, drag) {
+		const serverCapId = cap.pvpId;
+		if (!serverCapId) return;
+		const serverDrag = state.pvp.myRole === 'guest' ? { x: -drag.x, y: -drag.y } : drag;
+		state.pvp.animating = true;
+		state.turn = 'settling';
+		state.selectedCap = null;
+		showToast('Shot away.');
+		updateHud();
+		try {
+			const response = await apiSubmitTurn(state.pvp.matchId, serverCapId, serverDrag.x, serverDrag.y);
+			await playPvpFrames(response.frames);
+			applyPvpMatch(response.match, response.resultEvent);
+		} catch (error) {
+			state.pvp.animating = false;
+			state.turn = 'player';
+			showToast(error instanceof Error ? error.message : 'Could not submit your shot.');
+			updateHud();
+		}
+	}
+
+	async function claimPvpTimeout() {
+		if (!state.pvp.matchId || state.pvp.claimingTimeout) return;
+		state.pvp.claimingTimeout = true;
+		try {
+			const match = await apiClaimTimeout(state.pvp.matchId);
+			applyPvpMatch(match);
+		} catch {
+			// The clock may have already turned over server-side; the next
+			// Transmit push or poll will correct the UI either way.
+		} finally {
+			state.pvp.claimingTimeout = false;
+		}
+	}
+
+	function tickPvpClock() {
+		if (!state.isPvp || state.mode !== 'running' || state.pvp.animating) return;
+		if (!state.pvp.turnExpiresAtMs) return;
+		state.remaining = Math.max(0, (state.pvp.turnExpiresAtMs - Date.now()) / 1000);
+		if (state.remaining <= 0 && state.turn === 'cpu' && !state.pvp.claimingTimeout) {
+			claimPvpTimeout();
+		}
+	}
+
 	function onPointerDown(event) {
 		if (!event.isPrimary || event.button !== 0) return;
 		if (event.cancelable) event.preventDefault();
@@ -1162,7 +1761,8 @@ import {
 	}
 
 	function beginDrag(point) {
-		if (state.mode !== 'running' || state.turn !== 'player' || !isSettled()) return false;
+		if (state.mode !== 'running' || state.turn !== 'player') return false;
+		if (state.isPvp ? state.pvp.animating : !isSettled()) return false;
 		const canvasWidth = canvas.getBoundingClientRect().width;
 		const cap = playerCaps.find(
 			(item) =>
@@ -1183,6 +1783,10 @@ import {
 		const drag = clampVector({ x: cap.x - point.x, y: cap.y - point.y }, physics.maxDrag);
 		cancelDrag();
 		if (Math.hypot(drag.x, drag.y) < 10) return;
+		if (state.isPvp) {
+			releasePvpDrag(cap, drag);
+			return;
+		}
 		if (isInvalidKeeperFlick(cap, drag)) {
 			showToast('Keeper can only move back toward goal while the ball is safe.');
 			return;
@@ -1236,7 +1840,12 @@ import {
 	function loop(now) {
 		const dt = Math.min((now - state.lastFrame) / 1000, 0.033);
 		state.lastFrame = now;
-		if (state.mode === 'running') tickRun(dt);
+		if (state.isPvp) {
+			tickPvpClock();
+			if (state.turn === 'player' || state.turn === 'cpu') updateHud();
+		} else if (state.mode === 'running') {
+			tickRun(dt);
+		}
 		tickAudio(dt);
 		draw();
 		requestAnimationFrame(loop);
@@ -2015,7 +2624,14 @@ import {
 		ctx.font = '800 18px Open Sans, sans-serif';
 		ctx.textAlign = 'center';
 		ctx.textBaseline = 'middle';
-		const label = state.turn === 'player' ? 'YOUR FLICK' : state.turn === 'cpu' ? 'CPU THINKING' : 'BALL MOVING';
+		const label =
+			state.turn === 'player'
+				? 'YOUR FLICK'
+				: state.turn === 'cpu'
+					? state.isPvp
+						? "OPPONENT'S TURN"
+						: 'CPU THINKING'
+					: 'BALL MOVING';
 		ctx.fillText(label, 360, 483);
 		ctx.restore();
 	}
@@ -2315,7 +2931,10 @@ import {
 
 	async function shareResult() {
 		const url = new URL('/kanter-ball', window.location.origin).href;
-		const text = `I played the computer ${state.playerScore}-${state.cpuScore} on ${rulesLabel()} · ${difficultyLabel()} in Sportykore Kanter Ball. You try: ${url}`;
+		const pvp = state.lastPvpSummary;
+		const text = pvp
+			? `I ${pvp.outcome} ${pvp.myScore}-${pvp.opponentScore} against my opponent in Sportykore Kanter Ball. You try: ${url}`
+			: `I played the computer ${state.playerScore}-${state.cpuScore} on ${rulesLabel()} · ${difficultyLabel()} in Sportykore Kanter Ball. You try: ${url}`;
 		track('share_click', currentResultData('share'));
 		if (navigator.share) {
 			try {
